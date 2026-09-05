@@ -128,6 +128,7 @@ export async function buildProjectSourcesBrowserConfig({
     manualLoginProfileDir,
     manualLoginCookieSync,
     desiredModel: null,
+    expectedModel: undefined,
     modelStrategy: "ignore",
     researchMode: "off",
   };

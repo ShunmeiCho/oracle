@@ -1,4 +1,9 @@
-import { isGpt6Alias, isGpt6ProAlias } from "./browserConfig.js";
+import {
+  GPT_MODEL_CAPABILITIES,
+  resolveGptModelAlias,
+  isRegisteredBrowserProAlias,
+  isModernGptModelId,
+} from "../oracle/modelCapabilities.js";
 import { InvalidArgumentError, type Command } from "commander";
 import { parseDuration } from "../duration.js";
 import path from "node:path";
@@ -229,10 +234,15 @@ export function resolveApiModel(modelValue: string): ModelName {
   if (normalized.includes("/")) {
     return normalized as ModelName;
   }
-  // gpt-6-pro is a ChatGPT browser tier (Latest + Pro), not an API slug; the API side runs
-  // gpt-6-astra and the browser keeps the Pro default through the requested model.
-  if (isGpt6Alias(normalized)) {
-    return "gpt-6-astra";
+  if (isRegisteredBrowserProAlias(normalized)) {
+    throw new InvalidArgumentError(
+      `"${modelValue}" is a ChatGPT browser alias. For API Pro mode, use --model ${resolveGptModelAlias(normalized)!.model} --reasoning-mode pro.`,
+    );
+  }
+  const registered = resolveGptModelAlias(normalized);
+  if (registered) return registered.model;
+  if (isModernGptModelId(normalized)) {
+    return normalized as ModelName;
   }
   const gpt56Label = parseBrowserGpt56Label(normalized);
   if (gpt56Label?.variant.split(" ").includes("pro")) {
@@ -342,11 +352,15 @@ export function inferModelFromLabel(modelValue: string): ModelName {
   }
   // gpt-6 / gpt-6-pro / latest: ChatGPT's "Latest" model (GPT-6 Astra). The browser-only -pro alias
   // is passed through so its Pro tier default survives (resolveDefaultBrowserThinkingTime).
-  if (isGpt6ProAlias(normalized)) {
-    return "gpt-6-pro" as ModelName;
+  if (isRegisteredBrowserProAlias(normalized)) {
+    return GPT_MODEL_CAPABILITIES[resolveGptModelAlias(normalized)!.model].browser.proAlias;
   }
-  if (isGpt6Alias(normalized)) {
-    return "gpt-6-astra";
+  const registered = resolveGptModelAlias(normalized);
+  if (registered) return registered.model;
+  if (isModernGptModelId(normalized)) {
+    throw new InvalidArgumentError(
+      `Unsupported GPT browser model "${modelValue}". Run oracle configure --list to see supported targets.`,
+    );
   }
   if (normalized.includes("grok")) {
     return "grok-4.1";

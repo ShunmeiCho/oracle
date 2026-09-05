@@ -1,7 +1,8 @@
+import type { RegisteredGptModel } from "./modelCapabilities.js";
 export type TokenizerFn = (input: unknown, options?: Record<string, unknown>) => number;
 
 export type KnownModelName =
-  | "gpt-6-astra"
+  | RegisteredGptModel
   | "gpt-5.6"
   | "gpt-5.6-sol"
   | "gpt-5.5"

@@ -1,3 +1,4 @@
+import { GPT_MODEL_CAPABILITIES, type RegisteredGptModel } from "./modelCapabilities.js";
 import { createRequire } from "node:module";
 import type { ModelConfig, ModelName, KnownModelName, ProModelName, TokenizerFn } from "./types.js";
 import { stringifyTokenizerInput } from "./tokenStringifier.js";
@@ -46,18 +47,23 @@ const countTokensAnthropic: TokenizerFn = (input: unknown): number => {
 const GPT_5_6_BASE_RATE_INPUT_LIMIT = 272_000;
 
 export const MODEL_CONFIGS: Record<KnownModelName, ModelConfig> = {
-  "gpt-6-astra": {
-    model: "gpt-6-astra",
-    provider: "openai",
-    tokenizer: countTokensGpt5 as TokenizerFn,
-    // Same base-rate window as GPT-5.6: prompts above 272K input tokens are billed at the long-context multiplier.
-    inputLimit: GPT_5_6_BASE_RATE_INPUT_LIMIT,
-    pricing: {
-      inputPerToken: 10 / 1_000_000,
-      outputPerToken: 50 / 1_000_000,
-    },
-    reasoning: { effort: "xhigh" },
-  },
+  ...(Object.fromEntries(
+    Object.entries(GPT_MODEL_CAPABILITIES).map(([model, spec]) => [
+      model,
+      {
+        model,
+        provider: "openai",
+        searchToolType: spec.api.searchToolType,
+        tokenizer: countTokensGpt5 as TokenizerFn,
+        inputLimit: spec.api.inputLimit,
+        pricing: {
+          inputPerToken: spec.api.inputPerMillion / 1_000_000,
+          outputPerToken: spec.api.outputPerMillion / 1_000_000,
+        },
+        reasoning: { effort: spec.api.defaultEffort },
+      },
+    ]),
+  ) as Record<RegisteredGptModel, ModelConfig>),
   "gpt-5.6": {
     model: "gpt-5.6",
     provider: "openai",

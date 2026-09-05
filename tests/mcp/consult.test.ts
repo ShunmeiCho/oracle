@@ -18,6 +18,28 @@ import {
 } from "../../src/mcp/tools/consult.ts";
 
 describe("summarizeModelRunsForConsult", () => {
+  test("selects GPT-6 and the Pro tier with the explicit browser preset", () => {
+    expect(
+      applyConsultPreset({ preset: "chatgpt-gpt6-pro", prompt: "review this plan", files: [] }),
+    ).toMatchObject({ engine: "browser", model: "gpt-6-pro", browserThinkingTime: "pro" });
+    expect(() =>
+      applyConsultPreset({
+        preset: "chatgpt-gpt6-pro",
+        prompt: "review",
+        files: [],
+        engine: "api",
+      }),
+    ).toThrow(/single browser model/);
+    expect(() =>
+      applyConsultPreset({
+        preset: "chatgpt-gpt6-pro",
+        prompt: "review",
+        files: [],
+        models: ["gpt-6-astra"],
+      }),
+    ).toThrow(/single browser model/);
+  });
+
   test("applies the ChatGPT Pro Heavy consult preset as overridable defaults", () => {
     expect(
       applyConsultPreset({

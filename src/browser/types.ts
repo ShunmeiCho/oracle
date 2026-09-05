@@ -99,6 +99,7 @@ export interface BrowserAutomationConfig {
   keepBrowser?: boolean;
   hideWindow?: boolean;
   desiredModel?: string | null;
+  expectedModel?: string;
   modelStrategy?: BrowserModelStrategy;
   debug?: boolean;
   allowCookieErrors?: boolean;
@@ -198,6 +199,7 @@ export type ResolvedBrowserConfig = Required<
     | "chromePath"
     | "chromeCookiePath"
     | "desiredModel"
+    | "expectedModel"
     | "remoteChrome"
     | "remoteChromeBrowserWSEndpoint"
     | "remoteChromeProfileRoot"
@@ -214,6 +216,7 @@ export type ResolvedBrowserConfig = Required<
   attachRunning?: boolean;
   browserTabRef?: string | null;
   desiredModel?: string | null;
+  expectedModel?: string;
   modelStrategy?: BrowserModelStrategy;
   thinkingTime?: ThinkingTimeLevel;
   debugPort?: number | null;

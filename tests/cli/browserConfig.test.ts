@@ -1,8 +1,11 @@
+import {
+  resolveGptModelAlias,
+  isRegisteredBrowserProAlias as isGpt6ProAlias,
+} from "../../src/oracle/modelCapabilities.js";
+const isGpt6Alias = (value: string | undefined) => resolveGptModelAlias(value) !== undefined;
 import { describe, expect, test, vi } from "vitest";
 import {
   buildBrowserConfig,
-  isGpt6Alias,
-  isGpt6ProAlias,
   mapModelToBrowserLabel,
   normalizeChatGptModelForBrowser,
   resolveBrowserModelLabel,

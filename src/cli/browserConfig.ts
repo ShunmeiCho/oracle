@@ -1,4 +1,10 @@
 import fs from "node:fs/promises";
+import {
+  GPT_MODEL_CAPABILITIES,
+  resolveGptModelAlias,
+  isRegisteredBrowserProAlias,
+  expectedBrowserModel,
+} from "../oracle/modelCapabilities.js";
 import path from "node:path";
 import chalk from "chalk";
 import type { BrowserSessionConfig } from "../sessionStore.js";
@@ -33,10 +39,13 @@ const CURRENT_CHATGPT_PRO_ALIASES = new Set([
 // The browser label is passed to the model picker which fuzzy-matches against ChatGPT's UI.
 const BROWSER_MODEL_LABELS: [ModelName, string][] = [
   // Most specific first (e.g., "gpt-5.2-thinking" before "gpt-5.2")
-  // GPT-6 (Astra) has no entry of its own in the ChatGPT picker: it is the "Latest" radio of the
-  // advanced view, and "GPT-6 Pro" is that radio with the power slider at Pro (composer pill "6 Pro").
-  ["gpt-6-pro", "Latest"],
-  ["gpt-6-astra", "Latest"],
+  ...Object.entries(GPT_MODEL_CAPABILITIES).flatMap(
+    ([model, spec]) =>
+      [
+        [spec.browser.proAlias, spec.browser.label],
+        [model, spec.browser.label],
+      ] as [ModelName, string][],
+  ),
   ["gpt-5.6-sol", "GPT-5.6 Sol"],
   ["gpt-5.6", "GPT-5.6 Sol"],
   ["gpt-5.5-pro", "GPT-5.5"],
@@ -110,12 +119,11 @@ export interface BrowserFlagOptions {
 
 export function normalizeChatGptModelForBrowser(model: ModelName): ModelName {
   const normalized = model.toLowerCase() as ModelName;
-  // Browser-only alias: gpt-6-pro keeps its name so the Pro tier default survives (label "Latest").
-  if (isGpt6ProAlias(normalized)) {
-    return "gpt-6-pro" as ModelName;
-  }
-  if (isGpt6Alias(normalized)) {
-    return "gpt-6-astra";
+  const registered = resolveGptModelAlias(normalized);
+  if (registered) {
+    return registered.pro
+      ? GPT_MODEL_CAPABILITIES[registered.model].browser.proAlias
+      : registered.model;
   }
   if (!normalized.startsWith("gpt-") || normalized.includes("codex")) {
     return model;
@@ -150,22 +158,6 @@ export function normalizeChatGptModelForBrowser(model: ModelName): ModelName {
   return model;
 }
 
-// Documented spellings only: gpt-6, gpt-6-astra, gpt-6-pro (plus their label forms such as
-// "GPT-6 Pro") and "latest" map to ChatGPT's "Latest" model. Any other gpt-6-* id (gpt-6-codex,
-// gpt-6-custom, ...) is not an alias and must pass through unchanged for custom/OpenRouter use.
-const GPT6_ALIAS_PATTERN = /^gpt[-_ ]?6(?:[-_ ](?:astra|pro))?$/;
-const GPT6_PRO_ALIAS_PATTERN = /^gpt[-_ ]?6[-_ ]pro$/;
-
-// The -pro alias also selects the Pro power tier by default (see resolveDefaultBrowserThinkingTime).
-export function isGpt6Alias(model: string | undefined): boolean {
-  const normalized = model?.trim().toLowerCase() ?? "";
-  return normalized === "latest" || GPT6_ALIAS_PATTERN.test(normalized);
-}
-
-export function isGpt6ProAlias(model: string | undefined): boolean {
-  return GPT6_PRO_ALIAS_PATTERN.test(model?.trim().toLowerCase() ?? "");
-}
-
 export function isCurrentChatGptProAlias(model: string | undefined): boolean {
   return CURRENT_CHATGPT_PRO_ALIASES.has(model?.trim().toLowerCase() ?? "");
 }
@@ -183,8 +175,8 @@ export function resolveDefaultBrowserThinkingTime({
   if (strategy !== "select") return undefined;
   const normalizedModel = normalizeChatGptModelForBrowser(model as ModelName);
   return isCurrentChatGptProAlias(requestedModel ?? model) ||
-    isGpt6ProAlias(requestedModel ?? model) ||
-    normalizedModel === "gpt-6-pro" ||
+    isRegisteredBrowserProAlias(requestedModel ?? model) ||
+    isRegisteredBrowserProAlias(normalizedModel) ||
     normalizedModel === "gpt-5.5-pro"
     ? "pro"
     : undefined;
@@ -349,6 +341,7 @@ export async function buildBrowserConfig(
     copyProfileSource: options.copyProfile ?? undefined,
     hideWindow: options.browserHideWindow ? true : undefined,
     desiredModel,
+    expectedModel: expectedBrowserModel(options.model),
     modelStrategy,
     debug: options.verbose ? true : undefined,
     // Allow cookie failures by default so runs can continue without Chrome/Keychain secrets.

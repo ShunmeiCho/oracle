@@ -725,6 +725,7 @@ const CLIENT_BROWSER_CONFIG_FIELDS = [
   "chatgptUrl",
   "url",
   "desiredModel",
+  "expectedModel",
   "modelStrategy",
   "thinkingTime",
   "researchMode",

@@ -1307,7 +1307,7 @@ describe("browser model selection matchers", () => {
   it("accepts a GPT-6 composer pill as the selected Latest model", () => {
     expect(evaluateImmediateModelSelectionExpression("Latest", "6 Pro")).toEqual({
       status: "already-selected",
-      label: "Latest",
+      label: "6 Pro",
     });
   });
 
@@ -1703,6 +1703,45 @@ describe("browser model selection matchers", () => {
       /requires GPT-5\.6 Sol/,
     );
     expect(() => assertResolvedModelSelectionForTest("gpt-5.6-sol", "GPT-5.6 Sol")).not.toThrow();
+  });
+
+  it.each(["", "Latest", "Pro", "ChatGPT", "5.6 Pro", "GPT-5.6 Sol", "7 Pro", "60 Pro", "6.1 Pro"])(
+    "rejects ambiguous or wrong-version evidence for Astra: %s",
+    (label) => {
+      expect(() => assertResolvedModelSelectionForTest("Latest", label)).toThrow(/requires GPT-6/);
+    },
+  );
+
+  it.each(["6 Pro", "6Pro", "GPT-6 Astra", "ChatGPT 6 High", "6 Extra High"])(
+    "accepts observed GPT-6 evidence without discarding the version: %s",
+    (label) => {
+      expect(() => assertResolvedModelSelectionForTest("Latest", label)).not.toThrow();
+    },
+  );
+
+  it.each([null, "Latest", "5.6 Pro", "7 Pro"])(
+    "does not promote a successful DOM status to verified Astra without version evidence: %s",
+    async (label) => {
+      const runtime = {
+        evaluate: vi.fn().mockResolvedValue({
+          result: { value: { status: "already-selected", label } },
+        }),
+      };
+      await expect(
+        ensureModelSelection(runtime as never, "Latest", vi.fn() as never, "select"),
+      ).rejects.toThrow(/requires GPT-6/);
+    },
+  );
+
+  it("keeps current strategy observational when an older model is selected", async () => {
+    const runtime = {
+      evaluate: vi.fn().mockResolvedValue({
+        result: { value: { status: "already-selected", label: "5.6 Pro" } },
+      }),
+    };
+    await expect(
+      ensureModelSelection(runtime as never, "Latest", vi.fn() as never, "current"),
+    ).resolves.toMatchObject({ resolvedLabel: "5.6 Pro", verified: false });
   });
 
   it("does not validate the active picker label when strategy keeps current selection", async () => {

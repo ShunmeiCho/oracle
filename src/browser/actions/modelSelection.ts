@@ -1,3 +1,9 @@
+import {
+  GPT_MODEL_CAPABILITIES,
+  expectedBrowserModel,
+  browserVersionPattern,
+  type RegisteredGptModel,
+} from "../../oracle/modelCapabilities.js";
 import type { ChromeClient, BrowserLogger, BrowserModelStrategy } from "../types.js";
 import type { BrowserModelSelectionEvidence } from "../../sessionStore.js";
 import {
@@ -37,8 +43,9 @@ export async function ensureModelSelection(
   desiredModel: string,
   logger: BrowserLogger,
   strategy: BrowserModelStrategy = "select",
-  options: { buttonWaitMs?: number; buttonPollMs?: number } = {},
+  options: { buttonWaitMs?: number; buttonPollMs?: number; expectedModel?: string } = {},
 ): Promise<BrowserModelSelectionEvidence> {
+  const expectedModel = options.expectedModel ?? expectedBrowserModel(desiredModel);
   const buttonWaitMs = options.buttonWaitMs ?? MODEL_BUTTON_WAIT_MS;
   const buttonPollMs = options.buttonPollMs ?? MODEL_BUTTON_POLL_MS;
   const deadline = Date.now() + Math.max(0, buttonWaitMs);
@@ -47,7 +54,7 @@ export async function ensureModelSelection(
   let announcedWait = false;
   for (;;) {
     const outcome = await Runtime.evaluate({
-      expression: buildModelSelectionExpression(desiredModel, strategy),
+      expression: buildModelSelectionExpression(desiredModel, strategy, expectedModel),
       awaitPromise: true,
       returnByValue: true,
     });
@@ -68,8 +75,8 @@ export async function ensureModelSelection(
     case "already-selected":
     case "switched": {
       const observedLabel = result.label?.trim() || null;
-      if (strategy !== "current" && observedLabel !== null) {
-        assertResolvedModelSelection(desiredModel, observedLabel);
+      if (strategy !== "current" && (observedLabel !== null || expectedModel !== undefined)) {
+        assertResolvedModelSelection(desiredModel, observedLabel ?? "", expectedModel);
       }
       logger(`Model picker: ${observedLabel ?? "current model (label unavailable)"}`);
       return {
@@ -112,11 +119,27 @@ export async function ensureModelSelection(
   }
 }
 
-function assertResolvedModelSelection(desiredModel: string, resolvedLabel: string): void {
+function assertResolvedModelSelection(
+  desiredModel: string,
+  resolvedLabel: string,
+  expectedModel: string | undefined = expectedBrowserModel(desiredModel),
+): void {
   const desired = desiredModel.toLowerCase();
   const resolved = resolvedLabel.toLowerCase();
   const normalizedDesired = normalizeResolvedModelLabel(desired);
   const normalizedResolved = normalizeResolvedModelLabel(resolved);
+  if (expectedModel) {
+    const spec = GPT_MODEL_CAPABILITIES[expectedModel as RegisteredGptModel];
+    if (!spec) throw new Error(`Unsupported expected browser model: ${expectedModel}`);
+    // Latest is a moving UI alias. This adapter pins it to Astra using the
+    // observed version, not just the radio's name or a generic Pro label.
+    if (!browserVersionPattern(spec.browser.version, spec.browser.name).test(normalizedResolved)) {
+      throw new Error(
+        `Model picker selected "${resolvedLabel}" while "${desiredModel}" requires GPT-${spec.browser.version} version evidence.`,
+      );
+    }
+    return;
+  }
   const wantsGpt56Sol =
     /(?:^| )5 6(?: |$)/.test(normalizedDesired) && normalizedDesired.split(" ").includes("sol");
   if (wantsGpt56Sol) {
@@ -186,7 +209,16 @@ export function assertResolvedModelSelectionForTest(
 function buildModelSelectionExpression(
   targetModel: string,
   strategy: BrowserModelStrategy,
+  expectedModel: string | undefined = expectedBrowserModel(targetModel),
 ): string {
+  const expectedSpec = expectedModel
+    ? GPT_MODEL_CAPABILITIES[expectedModel as RegisteredGptModel]
+    : undefined;
+  if (expectedModel && !expectedSpec)
+    throw new Error(`Unsupported expected browser model: ${expectedModel}`);
+  const versionPattern = expectedSpec
+    ? browserVersionPattern(expectedSpec.browser.version, expectedSpec.browser.name)
+    : /(?!) /;
   const matchers = buildModelMatchersLiteral(targetModel);
   const composerSignalMatchers = buildComposerSignalMatchers(targetModel);
   const labelLiteral = JSON.stringify(matchers.labelTokens);
@@ -235,7 +267,7 @@ function buildModelSelectionExpression(
     // "Latest" (GPT-6 since 2026-09) is a radio in the advanced view whose composer pill reads
     // "6 Pro" / "6 High"…, while GPT-5.6 Sol's reads "5.6 Pro". Declared up front: getResolvedLabel
     // runs on the picker-less path before the selection helpers below are initialized.
-    const targetIsLatest = normalizedTarget === 'latest';
+    const requiresVersionEvidence = ${Boolean(expectedSpec)};
     const normalizedTokens = Array.from(new Set([normalizedTarget, ...LABEL_TOKENS]))
       .map((token) => normalizeText(token))
       .filter(Boolean);
@@ -381,10 +413,24 @@ function buildModelSelectionExpression(
     // "latest" target must be decided on it: the blank composer signal would otherwise pass as
     // "already selected" while GPT-5.6 Sol is active. Defined here, before getResolvedLabel, because
     // the "current" strategy resolves the label before the selection helpers further down exist.
-    const latestButtonSelected = () => {
-      const label = normalizeText(getButtonLabel());
-      return /^(chatgpt |gpt )?6(?![0-9 .]*[0-9])/.test(label) && !/(^| )5 6/.test(label);
+    const getVersionedModelLabel = () => {
+      const matchesVersion = (label) => ${versionPattern.toString()}.test(normalizeText(label));
+      const buttonLabel = getButtonLabel();
+      // The direct slider uses a generic "Thinking effort" composer trigger.
+      // Its versioned summary is the "Select model" menuitem in the opened picker.
+      const menu = findUnifiedPickerMenu();
+      const summaries = Array.from(menu?.querySelectorAll?.('[role="menuitem"][aria-expanded]') ?? []).filter((node) =>
+        isVisibleElement(node) &&
+        containsPickerWord(pickerNodeLabel(node), MODEL_WORDS) &&
+        !containsPickerWord(pickerNodeLabel(node), EFFORT_WORDS),
+      );
+      const labels = [buttonLabel, ...summaries.map((node) => (node.textContent ?? '').trim())];
+      const versionedLabels = labels.filter((label) => /^(?:(?:chatgpt|gpt) )?\\d/.test(normalizeText(label)));
+      // A stale matching summary must not override a conflicting visible version.
+      if (versionedLabels.some((label) => !matchesVersion(label))) return '';
+      return versionedLabels.find(matchesVersion) ?? '';
     };
+    const versionedModelSelected = () => Boolean(getVersionedModelLabel());
     const getComposerModelLabel = () =>
       (document.querySelector(COMPOSER_MODEL_SIGNAL_SELECTOR)?.textContent ?? '').trim();
     const readComposerModelSignal = () => normalizeText(getComposerModelLabel());
@@ -546,6 +592,11 @@ function buildModelSelectionExpression(
     };
     const advancedModelSignalMatchesTarget = (menu = null) => {
       const parentMenu = menu || findUnifiedPickerMenu();
+      if (requiresVersionEvidence) {
+        const checked = findCheckedAdvancedModelRadio(parentMenu);
+        return versionedModelSelected() &&
+          (!checked || normalizeText(checked.textContent ?? '') === normalizedTarget);
+      }
       const opener = findModelSubmenuOpener(parentMenu);
       if (!opener) return false;
       const label = normalizeText(pickerNodeLabel(opener));
@@ -568,11 +619,12 @@ function buildModelSelectionExpression(
     };
     const findCheckedAdvancedModelRadio = (menu = null) => {
       const scope = menu || findUnifiedPickerMenu() || document;
-      return (
-        scope?.querySelector?.(
-          '[data-testid="composer-model-picker-slider-advanced-view"] [role="menuitemradio"][aria-checked="true"]',
-        ) ?? null
-      );
+      const view = scope?.querySelector?.(ADVANCED_VIEW_SELECTOR) || scope;
+      return Array.from(view?.querySelectorAll?.('[role="menuitemradio"]') ?? []).find((node) => {
+        const label = normalizeText(node.textContent ?? '');
+        return isVisibleElement(node) && node.getAttribute?.('aria-checked') === 'true' &&
+          (label === 'latest' || /^gpt ?[0-9]/.test(label));
+      }) ?? null;
     };
     const getAdvancedModelLabel = () => {
       const opener = findModelSubmenuOpener(findUnifiedPickerMenu());
@@ -598,16 +650,9 @@ function buildModelSelectionExpression(
       );
     };
     const getResolvedLabel = (observedOptionLabel = '') => {
-      if (targetIsLatest) {
-        const checkedAdvancedRadio = findCheckedAdvancedModelRadio();
-        if (checkedAdvancedRadio) return (checkedAdvancedRadio.textContent ?? '').trim();
-        // Picker closed: the pill ("6 Pro") is the evidence; report the radio's name so callers
-        // can compare against the requested target instead of the tier-suffixed pill text.
-        if (latestButtonSelected()) return 'Latest';
-        const currentButtonLabel = getButtonLabel();
-        if (currentButtonLabel) return currentButtonLabel;
-        // No picker button at all (e.g. the "current" strategy on a page that hides it): fall back
-        // to the generic composer/observed label resolution below.
+      if (requiresVersionEvidence) {
+        // Preserve the actual version signal for the outer verification layer.
+        return getVersionedModelLabel() || getButtonLabel() || getComposerModelLabel() || observedOptionLabel || '';
       }
       if (configuredSelectionMatchesTarget()) {
         const variant = getConfiguredVariantLabel();
@@ -750,12 +795,10 @@ function buildModelSelectionExpression(
       return COMPOSER_SIGNAL_INCLUDES.some((token) => token && signal.includes(token));
     };
     const activeSelectionMatchesTarget = () => {
-      if (targetIsLatest) {
+      if (requiresVersionEvidence) {
         const checkedAdvancedRadio = findCheckedAdvancedModelRadio();
-        if (checkedAdvancedRadio) {
-          return normalizeText(checkedAdvancedRadio.textContent ?? '') === 'latest';
-        }
-        return latestButtonSelected();
+        return versionedModelSelected() && (!checkedAdvancedRadio ||
+          normalizeText(checkedAdvancedRadio.textContent ?? '') === normalizedTarget);
       }
       if (advancedModelSignalMatchesTarget()) {
         return true;
@@ -1360,7 +1403,7 @@ function buildModelSelectionExpression(
         if (match) {
           if (
             activeSelectionMatchesTarget() ||
-            canTrustSelectedOption(match.node, match.normalizedText, match.testid)
+            (!requiresVersionEvidence && canTrustSelectedOption(match.node, match.normalizedText, match.testid))
           ) {
             const resolvedLabel = getResolvedLabel(match.label);
             closeMenu();

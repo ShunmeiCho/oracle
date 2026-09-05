@@ -2052,3 +2052,59 @@ module.exports = () => ({
     INTEGRATION_TIMEOUT,
   );
 });
+
+test(
+  "GPT-6 browser aliases reach CLI preview and deployment commands stay non-interactive",
+  async () => {
+    const oracleHome = await mkdtemp(path.join(os.tmpdir(), "oracle-gpt6-cli-"));
+    const env = {
+      ...process.env,
+      ORACLE_HOME_DIR: oracleHome,
+      ORACLE_ENGINE: "browser",
+      OPENAI_API_KEY: "",
+    };
+    try {
+      const preview = await execCli(
+        [
+          "--engine",
+          "browser",
+          "--model",
+          "gpt-6-pro",
+          "--dry-run",
+          "json",
+          "-p",
+          "Verify browser model routing without sending",
+        ],
+        { env },
+      );
+      expect(preview.code, preview.stderr).toBe(0);
+      expect(preview.stdout).toContain('"model": "gpt-6-pro"');
+      expect(preview.stdout).toContain("target=Latest");
+      const configPreview = await execCli(
+        ["--verbose", "configure", "--model", "gpt-6-pro", "--dry-run", "--json"],
+        { env },
+      );
+      expect(configPreview.code, configPreview.stderr).toBe(0);
+      expect(JSON.parse(configPreview.stdout)).toMatchObject({ dryRun: true, changed: false });
+      expect(await readdir(oracleHome)).not.toContain("config.json");
+      const configured = await execCli(
+        ["--verbose", "configure", "--model", "gpt-6-pro", "--json"],
+        { env },
+      );
+      expect(configured.code, configured.stderr).toBe(0);
+      expect(JSON.parse(configured.stdout)).toMatchObject({ model: "gpt-6-pro", changed: true });
+      const saved = JSON.parse(await readFile(path.join(oracleHome, "config.json"), "utf8"));
+      expect(saved.model).toBe("gpt-6-pro");
+      expect(saved.browser.thinkingTime).toBe("pro");
+      const setup = await execCli(
+        ["--verbose", "setup", "--dry-run", "--agents", "codex", "--json"],
+        { env },
+      );
+      expect(setup.code, setup.stderr).toBe(0);
+      expect(JSON.parse(setup.stdout)).toMatchObject({ dryRun: true });
+    } finally {
+      await rm(oracleHome, { recursive: true, force: true });
+    }
+  },
+  INTEGRATION_TIMEOUT,
+);

@@ -6,6 +6,30 @@ import { DEFAULT_MODEL, MODEL_CONFIGS } from "../src/oracle/config.js";
 describe("resolveRunOptionsFromConfig", () => {
   const basePrompt = "This prompt is comfortably above twenty characters.";
 
+  it("keeps the GPT-6 Pro browser target without invoking API alias validation", () => {
+    const result = resolveRunOptionsFromConfig({
+      prompt: basePrompt,
+      userConfig: { engine: "browser", model: "gpt-6-pro" },
+      env: {},
+    });
+    expect(result.resolvedEngine).toBe("browser");
+    expect(result.runOptions.model).toBe("gpt-6-pro");
+  });
+
+  it("rejects the browser Pro alias when Azure changes the final engine to API", () => {
+    expect(() =>
+      resolveRunOptionsFromConfig({
+        prompt: basePrompt,
+        model: "gpt-6-pro",
+        env: {
+          AZURE_OPENAI_ENDPOINT: "https://example-resource.openai.azure.com/",
+          AZURE_OPENAI_DEPLOYMENT: "astra",
+          AZURE_OPENAI_API_KEY: "test-no-execution",
+        },
+      }),
+    ).toThrow(/--reasoning-mode pro/);
+  });
+
   it("uses config engine when none provided and env lacks OPENAI_API_KEY", () => {
     const { resolvedEngine } = resolveRunOptionsFromConfig({
       prompt: basePrompt,

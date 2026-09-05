@@ -274,9 +274,8 @@ describe("resolveApiModel", () => {
     expect(resolveApiModel("gpt-6")).toBe("gpt-6-astra");
     expect(resolveApiModel("gpt-6-astra")).toBe("gpt-6-astra");
     expect(resolveApiModel("latest")).toBe("gpt-6-astra");
-    expect(resolveApiModel("GPT-6 Pro")).toBe("gpt-6-astra");
-    // Browser-only tier alias: the API side runs gpt-6-astra.
-    expect(resolveApiModel("gpt-6-pro")).toBe("gpt-6-astra");
+    expect(() => resolveApiModel("GPT-6 Pro")).toThrow(/--reasoning-mode pro/);
+    expect(() => resolveApiModel("gpt-6-pro")).toThrow(/--reasoning-mode pro/);
   });
 
   test("preserves unknown gpt-6-* ids verbatim (OpenRouter/custom)", () => {
@@ -284,8 +283,7 @@ describe("resolveApiModel", () => {
     expect(resolveApiModel("gpt-6-astra-mini")).toBe("gpt-6-astra-mini");
     expect(resolveApiModel("gpt-6.1")).toBe("gpt-6.1");
     expect(resolveApiModel("openai/gpt-6-astra")).toBe("openai/gpt-6-astra");
-    // Not intercepted as an alias either: the pre-existing codex heuristic still owns this id.
-    expect(resolveApiModel("gpt-6-codex")).toBe("gpt-5.1-codex");
+    expect(resolveApiModel("gpt-6-codex")).toBe("gpt-6-codex");
   });
 
   test("passes through unknown names (OpenRouter/custom)", () => {
@@ -328,11 +326,9 @@ describe("inferModelFromLabel", () => {
   });
 
   test("does not treat unknown gpt-6-* ids as the Latest alias", () => {
-    // Undeclared suffixes are not GPT-6 aliases: they follow the pre-existing label heuristics
-    // (codex -> gpt-5.1-codex, otherwise the generic fallback) instead of becoming gpt-6-astra.
-    expect(inferModelFromLabel("gpt-6-codex")).toBe("gpt-5.1-codex");
-    expect(inferModelFromLabel("gpt-6-custom")).not.toMatch(/^gpt-6/);
-    expect(inferModelFromLabel("gpt-6-astra-mini")).not.toMatch(/^gpt-6/);
+    expect(() => inferModelFromLabel("gpt-6-codex")).toThrow(/Unsupported GPT browser/);
+    expect(() => inferModelFromLabel("gpt-6-custom")).toThrow(/Unsupported GPT browser/);
+    expect(() => inferModelFromLabel("gpt-6-astra-mini")).toThrow(/Unsupported GPT browser/);
   });
 
   test("does not reserve unrelated slashless API model ids containing 5.6", () => {

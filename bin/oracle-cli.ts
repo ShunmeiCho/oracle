@@ -49,6 +49,10 @@ import {
   mergePathLikeOptions,
   dedupePathInputs,
 } from "../src/cli/options.js";
+import {
+  resolveGptModelAlias,
+  isRegisteredBrowserProAlias,
+} from "../src/oracle/modelCapabilities.js";
 import { copyToClipboard } from "../src/cli/clipboard.js";
 import { buildMarkdownBundle } from "../src/cli/markdownBundle.js";
 import { shouldDetachSession, stopDetachedWorker } from "../src/cli/detach.js";
@@ -341,6 +345,8 @@ const program = new Command();
 let introPrinted = false;
 program.hook("preAction", (_thisCommand, actionCommand) => {
   perfTrace.mark("pre-action", { command: actionCommand.name() || "root" });
+  if (["configure", "setup"].includes(actionCommand.name()) && actionCommand.optsWithGlobals().json)
+    return;
   if (suppressIntro) return;
   if (introPrinted) return;
   console.log(formatIntroLine(VERSION, { env: process.env, richTty: isTty }));
@@ -1173,6 +1179,33 @@ program
     await runProviderDoctor(this.optsWithGlobals());
   });
 
+program
+  .command("configure")
+  .description("Choose and persist a ChatGPT browser model for this install or update.")
+  .option("--list", "List browser targets supported by this adapter.")
+  .option("--show", "Show the saved model without changing it.")
+  .option("-m, --model <model>", "Save this browser model without an interactive prompt.")
+  .option("--thinking-time <level>", "Set an explicit browser thinking level.")
+  .option("--dry-run", "Preview the selected model without changing configuration.")
+  .option("--json", "Print structured output.")
+  .action(async function (this: Command) {
+    const { configureBrowser } = await import("../src/cli/configureBrowser.js");
+    const options = this.optsWithGlobals();
+    if (this.getOptionValueSourceWithGlobals("model") === "default") delete options.model;
+    await configureBrowser(options);
+  });
+
+program
+  .command("setup")
+  .description("Detect Codex/Claude Code and register Oracle MCP with the agents you select.")
+  .option("--agents <agents>", "Explicit selected clients: codex,claude.")
+  .option("--dry-run", "Preview registration commands without changing configuration.")
+  .option("--json", "Print structured output.")
+  .action(async function (this: Command) {
+    const { setupAgents } = await import("../src/cli/setupAgents.js");
+    await setupAgents(this.optsWithGlobals());
+  });
+
 const docsCommand = program.command("docs").description("Documentation maintenance utilities.");
 
 docsCommand
@@ -1836,7 +1869,13 @@ async function runRootCommand(options: CliOptions): Promise<void> {
   const providerMode = resolveApiProviderMode(options);
   const engineModels = multiModelProvided
     ? Array.from(new Set(options.models!.map((entry) => resolveApiModel(entry))))
-    : [resolveApiModel(normalizeModelOption(options.model) || DEFAULT_MODEL)];
+    : [
+        resolveApiModel(
+          isRegisteredBrowserProAlias(options.model) && !options.route && !options.preflight
+            ? resolveGptModelAlias(options.model)!.model
+            : normalizeModelOption(options.model) || DEFAULT_MODEL,
+        ),
+      ];
   if (options.route || options.preflight) {
     const routeAzureEndpoint = firstNonEmpty(
       options.azureEndpoint,

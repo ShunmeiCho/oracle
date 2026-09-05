@@ -7,6 +7,17 @@ export function applyConsultPreset(input: ConsultInput): ConsultInput {
   if (!input.preset) {
     return input;
   }
+  if (input.preset === "chatgpt-gpt6-pro") {
+    if (input.engine === "api" || (input.models && input.models.length > 0)) {
+      throw new Error('MCP consult preset "chatgpt-gpt6-pro" requires a single browser model.');
+    }
+    return {
+      ...input,
+      engine: "browser",
+      model: input.model ?? "gpt-6-pro",
+      browserThinkingTime: input.browserThinkingTime ?? "pro",
+    };
+  }
   if (input.preset === "chatgpt-pro-heavy") {
     if (input.models && input.models.length > 0) {
       throw new Error('MCP consult preset "chatgpt-pro-heavy" cannot be combined with models.');

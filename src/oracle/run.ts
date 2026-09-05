@@ -1,3 +1,4 @@
+import { GPT_MODEL_CAPABILITIES, type RegisteredGptModel } from "./modelCapabilities.js";
 import chalk from "chalk";
 import kleur from "kleur";
 import fs from "node:fs/promises";
@@ -6,6 +7,7 @@ import process from "node:process";
 import { performance } from "node:perf_hooks";
 import type {
   ClientLike,
+  ModelConfig,
   OracleResponse,
   ResponseStreamLike,
   RunOracleDeps,
@@ -60,13 +62,7 @@ const dim = (text: string): string => (isStdoutTty ? kleur.dim(text) : text);
 // Default timeout for non-pro API runs (fast models) — give them up to 120s.
 const DEFAULT_TIMEOUT_NON_PRO_MS = 120_000;
 const DEFAULT_TIMEOUT_PRO_MS = 60 * 60 * 1000;
-const GPT_5_6_API_MODELS = new Set([
-  "gpt-6-astra",
-  "gpt-5.6",
-  "gpt-5.6-sol",
-  "gpt-5.6-terra",
-  "gpt-5.6-luna",
-]);
+const GPT_5_6_API_MODELS = new Set(["gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]);
 const REASONING_EFFORTS = new Set(["none", "low", "medium", "high", "xhigh", "max"]);
 const REASONING_MODES = new Set(["standard", "pro"]);
 
@@ -117,9 +113,30 @@ function runtimeKeySource({
   return optionsApiKey ? "apiKey option" : route.keySource;
 }
 
-function validateReasoningOptions(options: RunOracleOptions, route: ResolvedProviderRoute): void {
+function validateReasoningOptions(
+  options: RunOracleOptions,
+  route: ResolvedProviderRoute,
+  modelConfig?: Pick<ModelConfig, "reasoning">,
+): void {
   const { reasoningEffort, reasoningMode } = options;
-  if (!reasoningEffort && !reasoningMode) return;
+  const supportedEfforts = GPT_MODEL_CAPABILITIES[options.model as RegisteredGptModel]
+    ? new Set<string>(GPT_MODEL_CAPABILITIES[options.model as RegisteredGptModel].api.efforts)
+    : GPT_5_6_API_MODELS.has(options.model)
+      ? REASONING_EFFORTS
+      : undefined;
+  const effectiveEffort = reasoningEffort ?? modelConfig?.reasoning?.effort;
+  const registeredCapabilities = GPT_MODEL_CAPABILITIES[options.model as RegisteredGptModel];
+  if (
+    reasoningMode &&
+    registeredCapabilities &&
+    !(registeredCapabilities.api.modes as readonly string[]).includes(reasoningMode)
+  ) {
+    throw new PromptValidationError(
+      `Reasoning mode "${reasoningMode}" is not supported for ${options.model}.`,
+      { model: options.model, reasoningMode },
+    );
+  }
+  if (!reasoningEffort && !reasoningMode && !effectiveEffort) return;
   if (reasoningEffort && !REASONING_EFFORTS.has(reasoningEffort)) {
     throw new PromptValidationError(
       `Invalid reasoning effort "${reasoningEffort}". Expected none, low, medium, high, xhigh, or max.`,
@@ -132,7 +149,7 @@ function validateReasoningOptions(options: RunOracleOptions, route: ResolvedProv
       { model: options.model, reasoningMode },
     );
   }
-  if (!GPT_5_6_API_MODELS.has(options.model)) {
+  if ((reasoningEffort || reasoningMode) && !supportedEfforts) {
     const option = reasoningMode
       ? `Reasoning mode "${reasoningMode}"`
       : `Reasoning effort "${reasoningEffort}"`;
@@ -140,8 +157,14 @@ function validateReasoningOptions(options: RunOracleOptions, route: ResolvedProv
       ? `Use --model gpt-5.6-sol --reasoning-mode ${reasoningMode}.`
       : `Use --model gpt-5.6-sol --reasoning-effort ${reasoningEffort}.`;
     throw new PromptValidationError(
-      `${option} is available only for GPT-6 and GPT-5.6 API models. ${guidance}`,
+      `${option} is available only for GPT-5.6 API models or GPT-6 Astra. ${guidance}`,
       { model: options.model, reasoningEffort, reasoningMode },
+    );
+  }
+  if (effectiveEffort && supportedEfforts && !supportedEfforts.has(effectiveEffort)) {
+    throw new PromptValidationError(
+      `Reasoning effort "${effectiveEffort}" is not supported for ${options.model}. Expected low, medium, high, xhigh, or max.`,
+      { model: options.model, reasoningEffort: effectiveEffort, reasoningMode },
     );
   }
   if (
@@ -262,6 +285,7 @@ export async function runOracle(
     openRouterApiKey: resolverOpenRouterApiKey,
     modelOverrides: options.modelOverrides,
   });
+  validateReasoningOptions(options, route, modelConfig);
   const isLongRunningModel = isProTierModel;
   const supportsBackground = modelConfig.supportsBackground !== false;
   const useBackground = supportsBackground ? (options.background ?? isLongRunningModel) : false;

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { THINKING_TIME_INPUT_VALUES, normalizeThinkingTimeLevel } from "../oracle/thinkingTime.js";
 import type { ThinkingTimeLevel } from "../oracle/types.js";
 
-export const CONSULT_PRESETS = ["chatgpt-pro-heavy"] as const;
+export const CONSULT_PRESETS = ["chatgpt-pro-heavy", "chatgpt-gpt6-pro"] as const;
 
 export const browserThinkingTimeRawSchema = z.enum(THINKING_TIME_INPUT_VALUES);
 

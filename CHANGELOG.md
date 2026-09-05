@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.18.0-gpt6.local.1 — 2026-09-06 (local build)
+
+- Base GPT-6 browser support on upstream PR #448, commit `414a0e34816037e1c73686c6e61b00caa23fd5ed`. This is a locally maintained build, not an official npm release.
+- Require observed GPT-6 version evidence for ChatGPT's dynamic Latest alias; retain the observed version in selection evidence and reject stale, ambiguous, or future-version labels before submission. Verify Pro effort separately.
+- Add an explicit `chatgpt-gpt6-pro` MCP preset while retaining the legacy preset. Reject unsupported GPT-6 browser variants and direct API use of the browser-only Pro alias.
+- Adapt the Astra API validation and mock regression coverage from PR #449 without its conflicting browser restriction: reject unsupported effort defaults, preserve valid Pro mode, and use the supported web-search tool.
+- Centralize modern GPT capabilities; add a reversible model chooser (`configure`) and opt-in Codex/Claude Code MCP registration (`setup`) pointing both clients to one runtime. Preserve configured model choices on updates, custom configuration directories, and existing client registrations; support JSON and dry-run previews.
+
 ## Unreleased
 
 ### Added

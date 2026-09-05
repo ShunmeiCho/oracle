@@ -1,3 +1,4 @@
+import { expectedBrowserModel } from "../../oracle/modelCapabilities.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { getCliVersion } from "../../version.js";
@@ -47,7 +48,7 @@ const consultInputShape = {
     .enum(CONSULT_PRESETS)
     .optional()
     .describe(
-      'Optional MCP convenience preset. "chatgpt-pro-heavy" selects ChatGPT browser mode, the current Pro model alias, and Pro Extended thinking unless overridden.',
+      'Optional MCP convenience preset. "chatgpt-gpt6-pro" selects GPT-6 in ChatGPT browser mode with Pro effort. "chatgpt-pro-heavy" retains the legacy GPT-5.5 Pro Extended defaults. Explicit model/effort values override preset defaults.',
     ),
   prompt: z.string().min(1, "Prompt is required.").describe("User prompt to run."),
   files: z
@@ -206,6 +207,7 @@ const consultDryRunResolvedShape = z.object({
   browser: z
     .object({
       desiredModel: z.string().nullable().optional(),
+      expectedModel: z.string().optional(),
       thinkingTime: z.string().nullable().optional(),
       modelStrategy: z.string().nullable().optional(),
       researchMode: z.string().nullable().optional(),
@@ -380,6 +382,7 @@ export function buildConsultBrowserConfig({
     researchMode: browserResearchMode ?? configuredBrowser.researchMode,
     archiveConversations: browserArchive ?? configuredBrowser.archiveConversations,
     desiredModel: desiredModelLabel || mapModelToBrowserLabel(runModel),
+    expectedModel: expectedBrowserModel(runModel),
   };
 }
 
@@ -450,6 +453,7 @@ export function buildConsultDryRunResolved({
       resolvedEngine === "browser"
         ? {
             desiredModel,
+            expectedModel: browserConfig?.expectedModel,
             thinkingTime,
             modelStrategy: browserConfig?.modelStrategy ?? null,
             researchMode: browserConfig?.researchMode ?? null,

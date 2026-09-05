@@ -13,6 +13,7 @@ import { resolveGeminiModelId } from "../oracle/gemini.js";
 import { resolveOverriddenApiModel } from "../oracle/modelResolver.js";
 import { PromptValidationError } from "../oracle/errors.js";
 import { normalizeChatGptModelForBrowser } from "./browserConfig.js";
+import { resolveGptModelAlias, isRegisteredBrowserProAlias } from "../oracle/modelCapabilities.js";
 import { resolveConfiguredMaxFileSizeBytes } from "./fileSize.js";
 import { isAzureOpenAICandidateModel } from "../oracle/providerRouting.js";
 
@@ -58,7 +59,10 @@ export function resolveRunOptionsFromConfig({
     .filter(Boolean);
 
   const cliModelArg = normalizeModelOption(model ?? userConfig?.model) || DEFAULT_MODEL;
-  const apiModel = resolveApiModel(cliModelArg);
+  const apiModel =
+    resolvedEngine === "browser" && isRegisteredBrowserProAlias(cliModelArg)
+      ? resolveGptModelAlias(cliModelArg)!.model
+      : resolveApiModel(cliModelArg);
   // Browser label inference is intentionally engine-scoped: API model ids such as
   // gpt-5.6-luna must remain provider values even though browser mode rejects
   // unrecognized GPT-5.6 picker variants.
@@ -97,6 +101,13 @@ export function resolveRunOptionsFromConfig({
     isCodex || isClaude || isGrok || azureAutoApi || normalizedRequestedModels.length > 0
       ? "api"
       : resolvedEngine;
+  if (
+    fixedEngine === "api" &&
+    normalizedRequestedModels.length === 0 &&
+    isRegisteredBrowserProAlias(cliModelArg)
+  ) {
+    resolveApiModel(cliModelArg);
+  }
   // Browser runs use ChatGPT picker labels/aliases; API runs must keep API model ids intact.
   const resolvedModel = fixedEngine === "browser" ? browserModel : apiModel;
 
