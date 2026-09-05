@@ -1,5 +1,9 @@
 # Changelog
 
+## Maintained follow-ups (unreleased)
+
+- Retain configured remote Chrome endpoints in attach-running mode; the endpoint is the connection destination, not a conflicting launch option.
+
 ## 0.18.0-gpt6.local.2 — 2026-09-06 (local build)
 
 - Verify the returned assistant message's model separately from the picker, binding evidence to its observed conversation ID, message ID and answer. Reject mismatches without resending; label missing evidence unverified and retain per-turn results in sessions/MCP output.
