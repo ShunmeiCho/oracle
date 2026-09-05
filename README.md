@@ -4,7 +4,9 @@
 
 This is [ShunmeiCho/oracle](https://github.com/ShunmeiCho/oracle), an unofficial maintenance fork of [steipete/oracle](https://github.com/steipete/oracle). The `maintained` branch contains the working integration; independent fixes are prepared against upstream `main`. The upstream npm and Homebrew packages below do not install this fork.
 
-This build adds configurable browser model selection, optional Codex/Claude Code MCP setup using one installation, per-message model verification, and explicit new-task versus saved-conversation handling. GPT-6 Pro is the currently verified browser target. Future generations require a verified adapter update; the model choice is retained across updates.
+The focus is a repeatable adaptation process for evolving models: register capabilities in one place, verify the model that actually answers, retain user choices during upgrades, and keep client integrations stable. GPT-6 Pro is the currently verified adapter, not the project's long-term identity. See the [model adapter lifecycle](docs/model-adapter-lifecycle.md).
+
+This build provides configurable browser model selection, optional Codex/Claude Code MCP setup using one installation, per-message model verification, and explicit new-task versus saved-conversation handling. Support for a future generation is enabled after its adapter and validation are available; updating does not silently change the selected model.
 
 Start with the [maintained build guide](docs/gpt6-local.md) for installation, model selection, client setup, evidence, and rollback. To build this revision:
 
