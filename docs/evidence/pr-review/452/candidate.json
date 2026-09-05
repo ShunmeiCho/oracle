@@ -1,0 +1,241 @@
+{
+  "sourceRevision": "7f8e619afc451da245ad39ac71b0e8f80ec5bba3",
+  "moduleSha256": "c5d3f3ecd0dfe993e2c2e5e35e7e76d5ce179ac486cb3576804d461c84755828",
+  "platform": "linux/x64",
+  "cases": [
+    {
+      "setup": "fresh-profile",
+      "scenario": "create-failure",
+      "protectedPageCount": 1,
+      "outcome": "rejected",
+      "newAttempts": 1,
+      "createdTargets": 0,
+      "closedTargets": 0,
+      "sentinelWebSocketAttempts": 0,
+      "otherWebSocketAttempts": 0,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "setup": "fresh-profile",
+      "scenario": "attach-failure",
+      "protectedPageCount": 1,
+      "outcome": "rejected",
+      "newAttempts": 1,
+      "createdTargets": 1,
+      "closedTargets": 1,
+      "sentinelWebSocketAttempts": 0,
+      "otherWebSocketAttempts": 1,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "setup": "fresh-profile",
+      "scenario": "success",
+      "protectedPageCount": 1,
+      "outcome": "connected",
+      "newAttempts": 1,
+      "createdTargets": 1,
+      "closedTargets": 1,
+      "sentinelWebSocketAttempts": 0,
+      "otherWebSocketAttempts": 1,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "setup": "reused-browser-with-existing-pages",
+      "scenario": "create-failure",
+      "protectedPageCount": 2,
+      "outcome": "rejected",
+      "newAttempts": 1,
+      "createdTargets": 0,
+      "closedTargets": 0,
+      "sentinelWebSocketAttempts": 0,
+      "otherWebSocketAttempts": 0,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "733b962e-239e-457a-8979-a9bee76ce723",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "733b962e-239e-457a-8979-a9bee76ce723",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "setup": "reused-browser-with-existing-pages",
+      "scenario": "attach-failure",
+      "protectedPageCount": 2,
+      "outcome": "rejected",
+      "newAttempts": 1,
+      "createdTargets": 1,
+      "closedTargets": 1,
+      "sentinelWebSocketAttempts": 0,
+      "otherWebSocketAttempts": 1,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "733b962e-239e-457a-8979-a9bee76ce723",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "733b962e-239e-457a-8979-a9bee76ce723",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "setup": "reused-browser-with-existing-pages",
+      "scenario": "success",
+      "protectedPageCount": 2,
+      "outcome": "connected",
+      "newAttempts": 1,
+      "createdTargets": 1,
+      "closedTargets": 1,
+      "sentinelWebSocketAttempts": 0,
+      "otherWebSocketAttempts": 1,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "733b962e-239e-457a-8979-a9bee76ce723",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "6ebcd5c4-00a6-4965-a27b-bd05ff5614ae",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "733b962e-239e-457a-8979-a9bee76ce723",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "chrome": "Chrome/137.0.7151.103",
+  "passed": true,
+  "cleanup": {
+    "passed": true,
+    "errors": []
+  }
+}

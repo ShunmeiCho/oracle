@@ -1,0 +1,120 @@
+{
+  "experiment": "real ChatGPT UI with controlled foreground timing after an observed unready resolver; diagnostic wrapper preserves original resolver conditions and return values, DOM, geometry, and clocks",
+  "builds": {
+    "baseline": {
+      "revision": "be6c92a9e4cce57c9767dadedb8686669cdf33b6",
+      "moduleSha256": "0974e87905d6a503023c7b10fbc4a4cc19044ce4eb4dee392871fad72acc27e9"
+    },
+    "candidate": {
+      "revision": "3b7a6b00a2550a54fafa07c24172de6958d1deca",
+      "moduleSha256": "2fc2c5eb9005cd15fdea7a4c894abeb3df872d6516d3ed85f1547eee56e6888a"
+    }
+  },
+  "attempts": [
+    {
+      "build": "baseline",
+      "attempt": 1,
+      "controlledForegroundDelayMs": 250,
+      "events": [
+        {
+          "type": "resolver",
+          "atMs": 478.59999990463257,
+          "ready": false,
+          "simpleActive": "true",
+          "controlPresent": false,
+          "width": null,
+          "height": null,
+          "index": null,
+          "level": null
+        },
+        {
+          "type": "foreground-requested",
+          "atMs": 731.5999999046326
+        }
+      ],
+      "logs": [],
+      "error": "Thinking time: selection unverified (requested Pro); refusing to submit without confirmed Pro.",
+      "persisted": {
+        "label": "Extra High",
+        "index": 3,
+        "rect": {
+          "x": 969.90625,
+          "y": 314.15625,
+          "width": 128.09375,
+          "height": 36,
+          "scale": 1
+        }
+      },
+      "qualifies": true
+    },
+    {
+      "build": "candidate",
+      "attempt": 1,
+      "controlledForegroundDelayMs": 250,
+      "events": [
+        {
+          "type": "resolver",
+          "atMs": 432.89999985694885,
+          "ready": false,
+          "simpleActive": "true",
+          "controlPresent": false,
+          "width": null,
+          "height": null,
+          "index": null,
+          "level": null
+        },
+        {
+          "type": "resolver",
+          "atMs": 574.2000000476837,
+          "ready": true,
+          "simpleActive": "true",
+          "controlPresent": true,
+          "width": 259.947998046875,
+          "height": 31.99359130859375,
+          "index": "3",
+          "level": "extra-high"
+        },
+        {
+          "type": "keydown",
+          "key": "ArrowRight",
+          "atMs": 575.0999999046326,
+          "trusted": false
+        },
+        {
+          "type": "foreground-requested",
+          "atMs": 700.3999998569489
+        },
+        {
+          "type": "resolver",
+          "atMs": 734.5,
+          "ready": true,
+          "simpleActive": "true",
+          "controlPresent": true,
+          "width": 259.9970703125,
+          "height": 31.999664306640625,
+          "index": "4",
+          "level": "pro"
+        }
+      ],
+      "logs": ["[browser] Thinking time: Pro"],
+      "persisted": {
+        "label": "6Pro",
+        "index": 4,
+        "rect": {
+          "x": 1014.421875,
+          "y": 314.15625,
+          "width": 83.578125,
+          "height": 36,
+          "scale": 1
+        }
+      },
+      "qualifies": true
+    }
+  ],
+  "chrome": "Chrome/137.0.7151.103",
+  "passed": true,
+  "cleanup": {
+    "passed": true,
+    "failures": []
+  }
+}

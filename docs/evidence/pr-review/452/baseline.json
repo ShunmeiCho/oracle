@@ -1,0 +1,245 @@
+{
+  "sourceRevision": "be6c92a9e4cce57c9767dadedb8686669cdf33b6",
+  "moduleSha256": "39edbf0bfb484c3441ef213e94512f8c721decf6e60206127bca8c78163783fc",
+  "platform": "linux/x64",
+  "cases": [
+    {
+      "setup": "fresh-profile",
+      "scenario": "create-failure",
+      "protectedPageCount": 1,
+      "outcome": "connected",
+      "newAttempts": 1,
+      "createdTargets": 0,
+      "closedTargets": 0,
+      "sentinelWebSocketAttempts": 1,
+      "otherWebSocketAttempts": 0,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": false,
+      "assertion": "The expression evaluated to a falsy value:\n\n  assert.ok(counters.websocketTargets.every((id) => counters.created.includes(id)))\n"
+    },
+    {
+      "setup": "fresh-profile",
+      "scenario": "attach-failure",
+      "protectedPageCount": 1,
+      "outcome": "connected",
+      "newAttempts": 1,
+      "createdTargets": 1,
+      "closedTargets": 1,
+      "sentinelWebSocketAttempts": 1,
+      "otherWebSocketAttempts": 1,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": false,
+      "assertion": "The expression evaluated to a falsy value:\n\n  assert.ok(counters.websocketTargets.every((id) => counters.created.includes(id)))\n"
+    },
+    {
+      "setup": "fresh-profile",
+      "scenario": "success",
+      "protectedPageCount": 1,
+      "outcome": "connected",
+      "newAttempts": 1,
+      "createdTargets": 1,
+      "closedTargets": 1,
+      "sentinelWebSocketAttempts": 0,
+      "otherWebSocketAttempts": 1,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "setup": "reused-browser-with-existing-pages",
+      "scenario": "create-failure",
+      "protectedPageCount": 2,
+      "outcome": "connected",
+      "newAttempts": 1,
+      "createdTargets": 0,
+      "closedTargets": 0,
+      "sentinelWebSocketAttempts": 1,
+      "otherWebSocketAttempts": 0,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "982b1164-154a-40c9-9386-ce714421e811",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "982b1164-154a-40c9-9386-ce714421e811",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": false,
+      "assertion": "The expression evaluated to a falsy value:\n\n  assert.ok(counters.websocketTargets.every((id) => counters.created.includes(id)))\n"
+    },
+    {
+      "setup": "reused-browser-with-existing-pages",
+      "scenario": "attach-failure",
+      "protectedPageCount": 2,
+      "outcome": "connected",
+      "newAttempts": 1,
+      "createdTargets": 1,
+      "closedTargets": 1,
+      "sentinelWebSocketAttempts": 1,
+      "otherWebSocketAttempts": 1,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "982b1164-154a-40c9-9386-ce714421e811",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "982b1164-154a-40c9-9386-ce714421e811",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": false,
+      "assertion": "The expression evaluated to a falsy value:\n\n  assert.ok(counters.websocketTargets.every((id) => counters.created.includes(id)))\n"
+    },
+    {
+      "setup": "reused-browser-with-existing-pages",
+      "scenario": "success",
+      "protectedPageCount": 2,
+      "outcome": "connected",
+      "newAttempts": 1,
+      "createdTargets": 1,
+      "closedTargets": 1,
+      "sentinelWebSocketAttempts": 0,
+      "otherWebSocketAttempts": 1,
+      "sentinelNavigations": 0,
+      "sentinelUnchanged": true,
+      "targetsRestored": true,
+      "onlyOwnedTargetsClosed": true,
+      "before": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "982b1164-154a-40c9-9386-ce714421e811",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "after": [
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "4782fc50-b334-4072-96e6-b93b776b05d8",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        },
+        {
+          "url": "about:blank",
+          "title": "oracle-protected",
+          "nonce": "982b1164-154a-40c9-9386-ce714421e811",
+          "htmlSha256": "9b098396f9ba381c2fcd6cb1d6e13bc2686af389bebfad3be94105a91b628e3c"
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "chrome": "Chrome/137.0.7151.103",
+  "passed": false,
+  "cleanup": {
+    "passed": true,
+    "errors": []
+  }
+}

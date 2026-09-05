@@ -1,0 +1,216 @@
+{
+  "experiment": "real ChatGPT UI with controlled foreground timing after a naturally observed zero-height read; no geometry/style/clock replacement",
+  "builds": {
+    "baseline": {
+      "revision": "be6c92a9e4cce57c9767dadedb8686669cdf33b6",
+      "moduleSha256": "0974e87905d6a503023c7b10fbc4a4cc19044ce4eb4dee392871fad72acc27e9"
+    },
+    "candidate": {
+      "revision": "3b7a6b00a2550a54fafa07c24172de6958d1deca",
+      "moduleSha256": "2fc2c5eb9005cd15fdea7a4c894abeb3df872d6516d3ed85f1547eee56e6888a"
+    }
+  },
+  "attempts": [
+    {
+      "build": "baseline",
+      "attempt": 1,
+      "controlledForegroundDelayMs": 250,
+      "events": [
+        {
+          "type": "geometry",
+          "atMs": 385.69999980926514,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "3",
+          "announcement": "Extra High, 4 of 5. Use Left and Right arrow keys to adjust power."
+        },
+        {
+          "type": "keydown",
+          "key": "ArrowRight",
+          "atMs": 386.5,
+          "trusted": false
+        },
+        {
+          "type": "geometry",
+          "atMs": 1393.8999998569489,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "4",
+          "announcement": "Pro, 5 of 5. Use Left and Right arrow keys to adjust power."
+        }
+      ],
+      "logs": ["[browser] Thinking time: Pro"],
+      "persisted": null,
+      "qualifies": false
+    },
+    {
+      "build": "baseline",
+      "attempt": 2,
+      "controlledForegroundDelayMs": 250,
+      "events": [
+        {
+          "type": "geometry",
+          "atMs": 1022.4000000953674,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "3",
+          "announcement": "Extra High, 4 of 5. Use Left and Right arrow keys to adjust power."
+        },
+        {
+          "type": "keydown",
+          "key": "ArrowRight",
+          "atMs": 1023.2999999523163,
+          "trusted": false
+        },
+        {
+          "type": "geometry",
+          "atMs": 2022.7999999523163,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "4",
+          "announcement": "Pro, 5 of 5. Use Left and Right arrow keys to adjust power."
+        }
+      ],
+      "logs": ["[browser] Thinking time: Pro"],
+      "persisted": null,
+      "qualifies": false
+    },
+    {
+      "build": "baseline",
+      "attempt": 3,
+      "controlledForegroundDelayMs": 250,
+      "events": [
+        {
+          "type": "geometry",
+          "atMs": 1126.7999999523163,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "3",
+          "announcement": "Extra High, 4 of 5. Use Left and Right arrow keys to adjust power."
+        },
+        {
+          "type": "keydown",
+          "key": "ArrowRight",
+          "atMs": 1127.2999999523163,
+          "trusted": false
+        },
+        {
+          "type": "geometry",
+          "atMs": 2127.7999999523163,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "4",
+          "announcement": "Pro, 5 of 5. Use Left and Right arrow keys to adjust power."
+        }
+      ],
+      "logs": ["[browser] Thinking time: Pro"],
+      "persisted": null,
+      "qualifies": false
+    },
+    {
+      "build": "candidate",
+      "attempt": 1,
+      "controlledForegroundDelayMs": 250,
+      "events": [
+        {
+          "type": "geometry",
+          "atMs": 1135.2999999523163,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "3",
+          "announcement": "Extra High, 4 of 5. Use Left and Right arrow keys to adjust power."
+        },
+        {
+          "type": "keydown",
+          "key": "ArrowRight",
+          "atMs": 1136.5,
+          "trusted": false
+        },
+        {
+          "type": "geometry",
+          "atMs": 2135.7000000476837,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "4",
+          "announcement": "Pro, 5 of 5. Use Left and Right arrow keys to adjust power."
+        }
+      ],
+      "logs": ["[browser] Thinking time: Pro"],
+      "persisted": null,
+      "qualifies": false
+    },
+    {
+      "build": "candidate",
+      "attempt": 2,
+      "controlledForegroundDelayMs": 250,
+      "events": [
+        {
+          "type": "geometry",
+          "atMs": 1099.3999998569489,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "3",
+          "announcement": "Extra High, 4 of 5. Use Left and Right arrow keys to adjust power."
+        },
+        {
+          "type": "keydown",
+          "key": "ArrowRight",
+          "atMs": 1100,
+          "trusted": false
+        },
+        {
+          "type": "geometry",
+          "atMs": 2100.0999999046326,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "4",
+          "announcement": "Pro, 5 of 5. Use Left and Right arrow keys to adjust power."
+        }
+      ],
+      "logs": ["[browser] Thinking time: Pro"],
+      "persisted": {
+        "width": 254.79998779296875,
+        "height": 31.3599853515625,
+        "index": 4,
+        "min": "0",
+        "max": "4",
+        "announcement": "Pro, 5 of 5. Use Left and Right arrow keys to adjust power."
+      },
+      "qualifies": false
+    },
+    {
+      "build": "candidate",
+      "attempt": 3,
+      "controlledForegroundDelayMs": 250,
+      "events": [
+        {
+          "type": "geometry",
+          "atMs": 1088.5999999046326,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "3",
+          "announcement": "Extra High, 4 of 5. Use Left and Right arrow keys to adjust power."
+        },
+        {
+          "type": "keydown",
+          "key": "ArrowRight",
+          "atMs": 1089.2000000476837,
+          "trusted": false
+        },
+        {
+          "type": "geometry",
+          "atMs": 2089.899999856949,
+          "width": 254.79998779296875,
+          "height": 31.3599853515625,
+          "index": "4",
+          "announcement": "Pro, 5 of 5. Use Left and Right arrow keys to adjust power."
+        }
+      ],
+      "logs": ["[browser] Thinking time: Pro"],
+      "persisted": null,
+      "qualifies": false
+    }
+  ],
+  "chrome": "Chrome/137.0.7151.103",
+  "passed": false
+}
