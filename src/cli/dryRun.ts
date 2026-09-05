@@ -134,6 +134,15 @@ function logBrowserControlPlan(
   label: string,
 ) {
   const plan = describeBrowserControlPlan(browserConfig);
+  const configuredUrl = browserConfig?.chatgptUrl ?? browserConfig?.url ?? "";
+  const conversation = browserConfig?.resumeConversationUrl
+    ? `resume saved conversation ${browserConfig.resumeConversationUrl}`
+    : browserConfig?.browserTabRef
+      ? `attach explicit tab ${browserConfig.browserTabRef}`
+      : /\/c\/[a-zA-Z0-9-]+/.test(configuredUrl)
+        ? `use configured conversation ${configuredUrl}`
+        : "new conversation";
+  log(`[${label}] Conversation: ${conversation}`);
   for (const line of formatBrowserControlPlan(plan, label)) {
     log(chalk.dim(line));
   }

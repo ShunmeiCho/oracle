@@ -2108,3 +2108,61 @@ test(
   },
   INTEGRATION_TIMEOUT,
 );
+
+test(
+  "explicit followup model overrides the historical model without losing the conversation",
+  async () => {
+    const oracleHome = await mkdtemp(path.join(os.tmpdir(), "oracle-followup-model-"));
+    try {
+      const dir = path.join(oracleHome, "sessions", "old-model-session");
+      await mkdir(dir, { recursive: true });
+      const browserConfig = {
+        desiredModel: "GPT-5.6 Sol",
+        modelStrategy: "select",
+        remoteChrome: { host: "127.0.0.1", port: 9222 },
+      };
+      await writeFile(
+        path.join(dir, "meta.json"),
+        JSON.stringify({
+          id: "old-model-session",
+          createdAt: new Date().toISOString(),
+          status: "completed",
+          mode: "browser",
+          model: "gpt-5.6-sol",
+          options: { model: "gpt-5.6-sol", browserConfig },
+          browser: { config: browserConfig, runtime: { conversationId: "saved-conversation" } },
+        }),
+      );
+      const result = await execCli(
+        [
+          "--engine",
+          "browser",
+          "--followup",
+          "old-model-session",
+          "--model",
+          "gpt-6-pro",
+          "--dry-run",
+          "json",
+          "-p",
+          "Continue the saved task",
+        ],
+        {
+          env: {
+            ...process.env,
+            ORACLE_HOME_DIR: oracleHome,
+            ORACLE_ENGINE: "browser",
+            OPENAI_API_KEY: "",
+          },
+        },
+      );
+      expect(result.code, result.stderr).toBe(0);
+      expect(result.stdout).toContain('"model": "gpt-6-pro"');
+      expect(result.stdout).toContain("target=Latest");
+      expect(result.stdout).toContain("saved-conversation");
+      expect(await readdir(path.join(oracleHome, "sessions"))).toEqual(["old-model-session"]);
+    } finally {
+      await rm(oracleHome, { recursive: true, force: true });
+    }
+  },
+  INTEGRATION_TIMEOUT,
+);

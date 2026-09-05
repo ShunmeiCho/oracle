@@ -145,12 +145,24 @@ export interface BrowserRunWarning {
   details?: Record<string, unknown>;
 }
 
+export interface BrowserResponseModelEvidence {
+  expectedModel: string;
+  messageId: string | null;
+  conversationId: string | null;
+  modelSlug: string | null;
+  status: "verified" | "mismatch" | "unavailable";
+  reason?: string;
+  source: "assistant-message-dom";
+  capturedAt: string;
+}
+
 export interface BrowserMetadata {
   config?: BrowserSessionConfig;
   runtime?: BrowserRuntimeMetadata;
   harvest?: BrowserHarvestMetadata;
   archive?: BrowserArchiveResult;
   modelSelection?: BrowserModelSelectionEvidence;
+  responseModels?: BrowserResponseModelEvidence[];
   warnings?: BrowserRunWarning[];
 }
 

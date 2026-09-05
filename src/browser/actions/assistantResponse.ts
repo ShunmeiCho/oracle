@@ -943,7 +943,7 @@ function buildAssistantSnapshotExpression(
       !isPlaceholder(extracted) &&
       !isActiveThinkingStatus(extracted)
     ) {
-      return extracted;
+      return { ...extracted, ...(currentConversationId ? { conversationId: currentConversationId } : {}) };
     }
     // Fallback for ChatGPT project view: answers can live outside conversation turns.
     const extractFallback = ${buildMarkdownFallbackExtractor("MIN_TURN_INDEX")};
@@ -1261,6 +1261,7 @@ function buildAssistantExtractor(functionName: string): string {
       const text = innerText.trim().length > 0 ? innerText : textContent;
       const html = contentRoot?.innerHTML ?? '';
       const messageId = messageRoot.getAttribute('data-message-id');
+      const modelSlug = messageRoot.getAttribute('data-message-model-slug');
       const turnId = messageRoot.getAttribute('data-testid');
       const generatedImages = Array.from(messageRoot.querySelectorAll('img')).filter((img) =>
         String(img?.src || '').includes('/backend-api/estuary/content?id=file_')
@@ -1274,10 +1275,10 @@ function buildAssistantExtractor(functionName: string): string {
         /^(?:reasoning\\s+|pro thinking\\s+)?thought for \\d+(?:\\.\\d+)?\\s*(?:s|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours)\\s+edit$/.test(normalizedText);
       if (generatedImages.length > 0 && imageOnlyChrome) {
         const label = generatedImages.length === 1 ? 'Generated image.' : \`Generated \${generatedImages.length} images.\`;
-        return { text: label, html: messageRoot?.innerHTML ?? html, messageId, turnId, turnIndex: index };
+        return { text: label, html: messageRoot?.innerHTML ?? html, messageId, ...(modelSlug ? { modelSlug } : {}), turnId, turnIndex: index };
       }
       if (text.trim()) {
-        return { text, html, messageId, turnId, turnIndex: index };
+        return { text, html, messageId, ...(modelSlug ? { modelSlug } : {}), turnId, turnIndex: index };
       }
     }
     return null;
@@ -1608,6 +1609,8 @@ interface AssistantSnapshot {
   text?: string;
   html?: string;
   messageId?: string | null;
+  modelSlug?: string | null;
+  conversationId?: string | null;
   turnId?: string | null;
   turnIndex?: number | null;
   completionVisible?: boolean;

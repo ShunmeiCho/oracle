@@ -399,6 +399,24 @@ describe("connectWithNewTab", () => {
     expect(cdpMock).not.toHaveBeenCalled();
   });
 
+  test("remote new-task failure never attaches an unrelated conversation", async () => {
+    cdpNewMock.mockRejectedValue(new Error("cannot create tab"));
+    const { connectToRemoteChrome } = await import("../../src/browser/chromeLifecycle.js");
+    await expect(
+      connectToRemoteChrome(
+        "127.0.0.1",
+        9222,
+        vi.fn<(message: string) => void>(),
+        "about:blank",
+        undefined,
+        {
+          fallbackToDefault: false,
+        },
+      ),
+    ).rejects.toThrow(/unrelated conversation/);
+    expect(cdpMock).not.toHaveBeenCalled();
+  });
+
   test("returns isolated target when attach succeeds", async () => {
     cdpNewMock.mockResolvedValue({ id: "target-2" });
     cdpMock.mockResolvedValue({});

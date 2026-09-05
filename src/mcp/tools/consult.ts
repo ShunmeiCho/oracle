@@ -233,6 +233,20 @@ export const consultOutputShape = {
   models: z.array(consultModelSummaryShape).optional(),
   artifacts: z.array(consultArtifactSummaryShape).optional(),
   images: z.array(consultImageSummaryShape).optional(),
+  responseModels: z
+    .array(
+      z.object({
+        expectedModel: z.string(),
+        messageId: z.string().nullable(),
+        conversationId: z.string().nullable(),
+        modelSlug: z.string().nullable(),
+        status: z.enum(["verified", "mismatch", "unavailable"]),
+        reason: z.string().optional(),
+        source: z.literal("assistant-message-dom"),
+        capturedAt: z.string(),
+      }),
+    )
+    .optional(),
 } satisfies z.ZodRawShape;
 
 export type ConsultModelSummary = z.infer<typeof consultModelSummaryShape>;
@@ -747,6 +761,7 @@ export async function runConsultTool(
         models: modelsSummary,
         artifacts,
         images,
+        responseModels: finalMeta.browser?.responseModels,
       },
     };
   } catch (error) {

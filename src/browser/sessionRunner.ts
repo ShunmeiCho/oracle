@@ -4,6 +4,7 @@ import { formatTokenCount } from "../oracle/runUtils.js";
 import { formatFinishLine } from "../oracle/finishLine.js";
 import type {
   BrowserModelSelectionEvidence,
+  BrowserResponseModelEvidence,
   BrowserRunWarning,
   BrowserSessionConfig,
   BrowserRuntimeMetadata,
@@ -12,6 +13,7 @@ import type {
 import { runBrowserMode } from "../browserMode.js";
 import type { BrowserRunResult } from "../browserMode.js";
 import { DEFAULT_BROWSER_CONFIG } from "./config.js";
+import { classifyResponseModel, expectedResponseModel } from "./responseModel.js";
 import { assembleBrowserPrompt } from "./prompt.js";
 import { BrowserAutomationError } from "../oracle/errors.js";
 import type { BrowserArchiveResult, BrowserLogger } from "./types.js";
@@ -37,6 +39,7 @@ export interface BrowserExecutionResult {
   runtime: BrowserRuntimeMetadata;
   archive?: BrowserArchiveResult;
   modelSelection?: BrowserModelSelectionEvidence;
+  responseModels?: BrowserResponseModelEvidence[];
   warnings?: BrowserRunWarning[];
   answerText: string;
   artifacts?: SessionArtifact[];
@@ -279,6 +282,20 @@ export async function runBrowserSessionExecution(
     elapsedMs: browserResult.tookMs,
     modelSelection,
   });
+  const expectedModel = expectedResponseModel(browserConfig);
+  const responseModels = browserResult.responseModels?.length
+    ? browserResult.responseModels
+    : expectedModel
+      ? [classifyResponseModel(expectedModel, null, "", browserResult.conversationId)]
+      : undefined;
+  if (responseModels?.some((x) => x.status !== "verified")) {
+    warnings.push({
+      code: "browser-response-model-unverified",
+      severity: "warning",
+      message:
+        "Actual response model is not verified. Picker selection alone is not proof of the model that answered.",
+    });
+  }
   for (const warning of warnings) {
     log(chalk.yellow(`[browser] ${warning.message}`));
   }
@@ -347,6 +364,7 @@ export async function runBrowserSessionExecution(
     },
     archive: browserResult.archive,
     modelSelection,
+    responseModels,
     warnings,
     answerText,
     artifacts: savedArtifacts,

@@ -2161,8 +2161,8 @@ async function runRootCommand(options: CliOptions): Promise<void> {
     browserFollowup = await resolveBrowserFollowupReference(options.followup, sessionStore);
     if (browserFollowup) {
       engine = "browser";
-      resolvedOptions.model = browserFollowup.model;
-      resolvedOptions.effectiveModelId = browserFollowup.model;
+      resolvedOptions.model = cliModelArg ? resolvedModel : browserFollowup.model;
+      resolvedOptions.effectiveModelId = resolvedOptions.model;
       resolvedOptions.followupSessionId = browserFollowup.sessionId;
       resolvedOptions.browserResumeConversationUrl = browserFollowup.resumeConversationUrl;
     } else {
@@ -2195,7 +2195,12 @@ async function runRootCommand(options: CliOptions): Promise<void> {
   const sessionMode: SessionMode = engine === "browser" ? "browser" : "api";
   const browserConfig = await (async (): Promise<BrowserSessionConfig | undefined> => {
     if (sessionMode !== "browser") return undefined;
-    if (browserFollowup) {
+    if (
+      browserFollowup &&
+      !cliModelArg &&
+      getSource("browserThinkingTime") !== "cli" &&
+      getSource("browserModelStrategy") !== "cli"
+    ) {
       return browserFollowup.browserConfig;
     }
     const { buildBrowserConfig, resolveBrowserModelLabel } =
@@ -2207,6 +2212,24 @@ async function runRootCommand(options: CliOptions): Promise<void> {
       browserRequestedModel: cliModelArg,
       browserModelLabel: resolveBrowserModelLabel(cliModelArg, activeModel),
     });
+    if (browserFollowup) {
+      return {
+        ...browserFollowup.browserConfig,
+        ...(cliModelArg
+          ? {
+              desiredModel: config.desiredModel,
+              expectedModel: config.expectedModel,
+              thinkingTime: config.thinkingTime,
+            }
+          : {}),
+        ...(getSource("browserThinkingTime") === "cli"
+          ? { thinkingTime: config.thinkingTime }
+          : {}),
+        ...(getSource("browserModelStrategy") === "cli"
+          ? { modelStrategy: config.modelStrategy }
+          : {}),
+      };
+    }
     return resolvedOptions.browserResumeConversationUrl
       ? { ...config, resumeConversationUrl: resolvedOptions.browserResumeConversationUrl }
       : config;

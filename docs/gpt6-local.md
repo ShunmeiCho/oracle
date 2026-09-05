@@ -1,5 +1,25 @@
 # Local GPT-6 support
 
+Current local revision: `0.18.0-gpt6.local.2`.
+
+## Verify the answer and choose the conversation
+
+Picker selection and the actual answer are separate evidence. Ordinary GPT-6 text runs now record `browser.responseModels` with the expected model, the assistant message's `data-message-model-slug`, observed conversation ID, message ID and status. Only `status: "verified"` confirms the model reported for the returned message. A mismatch aborts completion without resending; absent or ambiguous message evidence produces an explicit warning. Pro requests require the registered Pro response ID. ChatGPT's internal `thinking_effort` field is not treated as a substitute for its model ID.
+
+The owned tab is activated before setting Pro and checking the generation. This matters because background picker animations can temporarily expose zero-height controls. Every submission repeats the selection check, including saved-session follow-ups and retries after a composer reload.
+
+| Intent                                | Operation                                    | Conversation behavior                                              |
+| ------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------ |
+| New task, even in the same repository | `oracle-pro -p "..."` or a new MCP `consult` | New conversation; an unexpected existing history is rejected       |
+| Continue the same task                | `oracle-pro --followup <sessionId> -p "..."` | Reopens that session's saved conversation and sends a new question |
+| Change model while continuing         | Add explicit `--model gpt-6-pro`             | Keeps the conversation and applies the requested model             |
+| Resume waiting after a timeout        | `oracle session <sessionId> --render`        | Recovers the existing request; does not resend it                  |
+| Planned multi-turn MCP task           | `browserFollowUps: ["..."]`                  | All planned turns remain in the same conversation                  |
+
+Plain MCP `consult` does not accept a prior session ID; use the CLI's saved-session follow-up for a later continuation. A configured `/c/<id>` URL or explicit `--browser-tab` is an intentional history override. Previews state the selected conversation route. New remote tab creation failure is an error, not permission to reuse an arbitrary open tab. A task should keep its returned session ID; a project path or similar prompt is not sufficient identity. Serialize follow-ups to the same conversation; cross-client concurrent writes to one historical conversation are not yet protected by a dedicated conversation lock.
+
+These checks verify what the ChatGPT client reports. They cannot independently attest the server's underlying model weights. Deep Research, image-only flows, legacy models and old sessions without message evidence must not be described as covered by the ordinary GPT-6 text proof.
+
 This local build is based on upstream PR #448 at `414a0e34816037e1c73686c6e61b00caa23fd5ed`, with additional verification fixes and selected API validation/tests from PR #449 at `0ecfc00a51ca32c2adbb98f850f1b3b946873511`. It is not a published upstream release.
 
 For ChatGPT browser use:
@@ -27,7 +47,7 @@ pnpm install --frozen-lockfile
 pnpm build
 pnpm test --exclude 'tests/live/**'
 npm pack --ignore-scripts
-npm install -g ./steipete-oracle-0.18.0-gpt6.local.1.tgz --ignore-scripts
+npm install -g ./steipete-oracle-0.18.0-gpt6.local.2.tgz --ignore-scripts
 oracle configure
 oracle setup
 ```

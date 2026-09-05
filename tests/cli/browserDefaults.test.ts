@@ -9,6 +9,15 @@ import type { UserConfig } from "../../src/config.js";
 const source = (_key: keyof BrowserDefaultsOptions) => undefined;
 
 describe("applyBrowserDefaultsFromConfig", () => {
+  test("uses the same configured remote Chrome as MCP unless CLI overrides it", () => {
+    const options: BrowserDefaultsOptions = {};
+    const config: UserConfig = { browser: { remoteChrome: { host: "127.0.0.1", port: 9222 } } };
+    applyBrowserDefaultsFromConfig(options, config, source);
+    expect(options.remoteChrome).toBe("127.0.0.1:9222");
+    options.remoteChrome = "another-host:9444";
+    applyBrowserDefaultsFromConfig(options, config, () => "cli");
+    expect(options.remoteChrome).toBe("another-host:9444");
+  });
   test("applies chatgptUrl from user config when flags are absent", () => {
     const options: BrowserDefaultsOptions = {};
     const config: UserConfig = {

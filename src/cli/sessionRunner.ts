@@ -172,6 +172,7 @@ export async function performSessionRun({
           runtime: result.runtime,
           archive: result.archive,
           modelSelection: result.modelSelection,
+          responseModels: result.responseModels,
           warnings: result.warnings,
         },
         artifacts: mergeArtifacts(sessionMeta.artifacts, result.artifacts),

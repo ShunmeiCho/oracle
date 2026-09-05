@@ -1,6 +1,6 @@
 {
   "name": "@steipete/oracle",
-  "version": "0.18.0-gpt6.local.1",
+  "version": "0.18.0-gpt6.local.2",
   "description": "Local Oracle build with verified GPT-6 Astra browser selection and GPT-6 Pro support; based on upstream 0.18.0 development.",
   "keywords": [],
   "homepage": "https://askoracle.sh",

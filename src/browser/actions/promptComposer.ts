@@ -681,7 +681,7 @@ async function attemptSendButton(
   return false;
 }
 
-async function activatePageForTrustedInput(
+export async function activatePageForTrustedInput(
   Page: ChromeClient["Page"] | undefined,
   logger?: BrowserLogger,
 ): Promise<void> {

@@ -743,13 +743,22 @@ export function formatUserErrorMetadata(metadata?: SessionUserErrorMetadata): st
 
 export function formatBrowserEvidence(metadata: SessionMetadata): string[] | null {
   const browser = metadata.browser;
-  if (!browser?.modelSelection && (!browser?.warnings || browser.warnings.length === 0)) {
+  if (
+    !browser?.modelSelection &&
+    !browser?.responseModels?.length &&
+    (!browser?.warnings || browser.warnings.length === 0)
+  ) {
     return null;
   }
   const lines: string[] = [];
   const evidence = browser.modelSelection;
   if (evidence) {
     lines.push(`model ${formatBrowserModelSelectionEvidence(evidence, metadata.model)}`);
+  }
+  for (const response of browser?.responseModels ?? []) {
+    lines.push(
+      `response model expected=${response.expectedModel}; actual=${response.modelSlug ?? "unknown"}; message=${response.messageId ?? "unknown"}; status=${response.status}`,
+    );
   }
   for (const warning of browser.warnings ?? []) {
     lines.push(`warning ${warning.code}: ${warning.message}`);

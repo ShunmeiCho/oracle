@@ -47,7 +47,10 @@ import {
 } from "./pageActions.js";
 import { INPUT_SELECTORS } from "./constants.js";
 import { uploadAttachmentViaDataTransfer } from "./actions/remoteFileTransfer.js";
+import { verifyResponseModel } from "./responseModel.js";
+import { expectedBrowserModel } from "../oracle/modelCapabilities.js";
 import { ensureThinkingTime } from "./actions/thinkingTime.js";
+import { activatePageForTrustedInput } from "./actions/promptComposer.js";
 import { startThinkingStatusMonitor } from "./actions/thinkingStatus.js";
 import {
   activateDeepResearch,
@@ -57,7 +60,10 @@ import {
 } from "./actions/deepResearch.js";
 import { estimateTokenCount, withRetries, delay } from "./utils.js";
 import { formatElapsed } from "../oracle/format.js";
-import type { BrowserModelSelectionEvidence } from "../sessionStore.js";
+import type {
+  BrowserModelSelectionEvidence,
+  BrowserResponseModelEvidence,
+} from "../sessionStore.js";
 import { CHATGPT_URL, DEFAULT_MODEL_STRATEGY } from "./constants.js";
 import type { LaunchedChrome } from "chrome-launcher";
 import { BrowserAutomationError } from "../oracle/errors.js";
@@ -1002,6 +1008,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
   let lastUrl: string | undefined;
   let promptSubmitted = false;
   let modelSelectionEvidence: BrowserModelSelectionEvidence | undefined;
+  const responseModels: BrowserResponseModelEvidence[] = [];
   let tabLease: BrowserTabLease | null = null;
   let conversationUrlMonitor: ConversationUrlMonitor | null = null;
   const emitRuntimeHint = async (): Promise<void> => {
@@ -1521,65 +1528,73 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
     const updateConversationHint = conversationUrlMonitor.update;
     await captureRuntimeSnapshot();
     const modelStrategy = config.modelStrategy ?? DEFAULT_MODEL_STRATEGY;
-    if (config.desiredModel && modelStrategy !== "ignore" && !isResumingConversation) {
-      modelSelectionEvidence = await raceWithDisconnect(
-        withRetries(
-          () =>
-            ensureModelSelection(Runtime, config.desiredModel as string, logger, modelStrategy, {
-              expectedModel: config.expectedModel,
-            }),
-          {
-            retries: 2,
-            delayMs: 300,
-            onRetry: (attempt, error) => {
-              if (options.verbose) {
-                logger(
-                  `[retry] Model picker attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
-                );
-              }
-            },
-          },
-        ),
-      ).catch((error) => {
-        // Login has already been verified above. Preserve the picker failure instead of
-        // misdiagnosing an unavailable model as missing cookies.
-        throw normalizeAuthenticatedModelSelectionError(error);
-      });
-      await raceWithDisconnect(ensurePromptReady(Runtime, config.inputTimeoutMs, logger));
-      logger(
-        `Prompt textarea ready (after model switch, ${promptText.length.toLocaleString()} chars queued)`,
-      );
-    } else if (modelStrategy === "ignore" || isResumingConversation) {
-      modelSelectionEvidence = buildSkippedModelSelectionEvidence(
-        config.desiredModel,
-        modelStrategy,
-      );
-      logger(
-        isResumingConversation
-          ? "Model picker: skipped (resumed conversation)"
-          : "Model picker: skipped (strategy=ignore)",
-      );
-    }
     const deepResearch = config.researchMode === "deep";
-    if (shouldApplyThinkingTimeSelection(config)) {
-      const thinkingTargetModel = modelStrategy === "select" ? config.desiredModel : null;
-      await raceWithDisconnect(
-        withRetries(
-          () => ensureThinkingTime(Runtime, config.thinkingTime, logger, thinkingTargetModel),
-          {
-            retries: 2,
-            delayMs: 300,
-            onRetry: (attempt, error) => {
-              if (options.verbose) {
-                logger(
-                  `[retry] Thinking time (${config.thinkingTime}) attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
-                );
-              }
+    const verifyBeforeSubmit = async () => {
+      await activatePageForTrustedInput(Page, logger);
+      // Latest at non-Pro power can expose only "Extra High", hiding its generation.
+      // Set the requested Pro tier first so strict generation selection has a versioned UI signal.
+      if (
+        config.thinkingTime === "pro" &&
+        modelStrategy === "select" &&
+        expectedBrowserModel(config.expectedModel ?? config.desiredModel ?? undefined)
+      ) {
+        await ensureThinkingTime(Runtime, "pro", logger, config.desiredModel);
+      }
+      if (config.desiredModel && modelStrategy !== "ignore") {
+        modelSelectionEvidence = await raceWithDisconnect(
+          withRetries(
+            () =>
+              ensureModelSelection(Runtime, config.desiredModel as string, logger, modelStrategy, {
+                expectedModel: config.expectedModel,
+              }),
+            {
+              retries: 2,
+              delayMs: 300,
+              onRetry: (attempt, error) => {
+                if (options.verbose) {
+                  logger(
+                    `[retry] Model picker attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
+                  );
+                }
+              },
             },
-          },
-        ),
-      );
-    }
+          ),
+        ).catch((error) => {
+          // Login has already been verified above. Preserve the picker failure instead of
+          // misdiagnosing an unavailable model as missing cookies.
+          throw normalizeAuthenticatedModelSelectionError(error);
+        });
+        await raceWithDisconnect(ensurePromptReady(Runtime, config.inputTimeoutMs, logger));
+        logger(
+          `Prompt textarea ready (after model switch, ${promptText.length.toLocaleString()} chars queued)`,
+        );
+      } else if (modelStrategy === "ignore") {
+        modelSelectionEvidence = buildSkippedModelSelectionEvidence(
+          config.desiredModel,
+          modelStrategy,
+        );
+        logger("Model picker: skipped (strategy=ignore)");
+      }
+      if (shouldApplyThinkingTimeSelection(config)) {
+        const thinkingTargetModel = modelStrategy === "select" ? config.desiredModel : null;
+        await raceWithDisconnect(
+          withRetries(
+            () => ensureThinkingTime(Runtime, config.thinkingTime, logger, thinkingTargetModel),
+            {
+              retries: 2,
+              delayMs: 300,
+              onRetry: (attempt, error) => {
+                if (options.verbose) {
+                  logger(
+                    `[retry] Thinking time (${config.thinkingTime}) attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
+                  );
+                }
+              },
+            },
+          ),
+        );
+      }
+    };
     const profileLockTimeoutMs = manualLogin ? (config.profileLockTimeoutMs ?? 0) : 0;
     let profileLock: ProfileRunLock | null = null;
     const acquireProfileLockIfNeeded = async () => {
@@ -1596,6 +1611,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       await handle.release().catch(() => undefined);
     };
     const submitOnce = async (prompt: string, submissionAttachments: BrowserAttachment[]) => {
+      await verifyBeforeSubmit();
       const baselineSnapshot = await readAssistantSnapshot(Runtime).catch(() => null);
       const baselineAssistantText =
         typeof baselineSnapshot?.text === "string" ? baselineSnapshot.text.trim() : "";
@@ -1659,6 +1675,17 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
         );
       }
       let baselineTurns = await readConversationTurnCount(Runtime, logger);
+      const explicitHistory = Boolean(
+        config.resumeConversationUrl ||
+        config.browserTabRef ||
+        isConversationUrl(config.chatgptUrl ?? config.url ?? ""),
+      );
+      if (!promptSubmitted && !explicitHistory && baselineTurns !== 0) {
+        throw new BrowserAutomationError(
+          "New task did not reach an empty conversation. Use --followup with a saved session for intentional history; no prompt was sent.",
+          { stage: "conversation-isolation", details: { turnCount: baselineTurns } },
+        );
+      }
       // Learned: return baselineTurns so assistant polling can ignore earlier content.
       const providerState: Record<string, unknown> = {
         runtime: Runtime,
@@ -1812,6 +1839,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
         artifacts: savedArtifacts,
         archive,
         modelSelection: modelSelectionEvidence,
+        responseModels,
         tookMs: durationMs,
         answerTokens: tokens,
         answerChars: researchResult.text.length,
@@ -2049,6 +2077,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
           }
         }
       }
+      let responseMessageId = turnAnswer.meta.messageId;
       let turnAnswerText = turnAnswer.text;
       const turnAnswerHtml = turnAnswer.html ?? "";
       const copiedMarkdown = await raceWithDisconnect(
@@ -2104,6 +2133,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
           lengthDelta >= Math.max(12, Math.floor(trimmedMarkdown.length * 0.75));
         if ((missingCopy || likelyTruncatedCopy) && !finalIsEcho && finalText !== trimmedMarkdown) {
           logger("Refreshed assistant response via final DOM snapshot");
+          responseMessageId = finalSnapshot?.messageId;
           turnAnswerText = finalText;
           turnAnswerMarkdown = finalText;
         }
@@ -2139,6 +2169,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
           if (!isStillEcho) {
             if (!bestText || text.length > bestText.length) {
               bestText = text;
+              responseMessageId = snapshot?.messageId;
               stableCount = 0;
             } else if (text === bestText) {
               stableCount += 1;
@@ -2169,6 +2200,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
           const text = typeof snapshot?.text === "string" ? snapshot.text.trim() : "";
           if (text && text.length > bestText.length) {
             bestText = text;
+            responseMessageId = snapshot?.messageId;
             stableCycles = 0;
           } else {
             stableCycles += 1;
@@ -2184,6 +2216,16 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
           turnAnswerMarkdown = bestText;
         }
       }
+      const responseModel = await verifyResponseModel(
+        Runtime,
+        config,
+        turnAnswerText,
+        logger,
+        baselineTurns ?? undefined,
+        expectedConversationId(),
+        responseMessageId,
+      );
+      if (responseModel) responseModels.push(responseModel);
       return {
         label,
         answerText: turnAnswerText,
@@ -2328,6 +2370,7 @@ export async function runBrowserMode(options: BrowserRunOptions): Promise<Browse
       savedFiles: fileArtifacts.savedFiles,
       archive,
       modelSelection: modelSelectionEvidence,
+      responseModels,
       tookMs: durationMs,
       answerTokens,
       answerChars,
@@ -2949,6 +2992,7 @@ async function runRemoteBrowserMode(
   let lastUrl: string | undefined;
   let promptSubmitted = false;
   let modelSelectionEvidence: BrowserModelSelectionEvidence | undefined;
+  const responseModels: BrowserResponseModelEvidence[] = [];
   let attachedExistingTab = false;
   let ownsTarget = true;
   let conversationUrlMonitor: ConversationUrlMonitor | null = null;
@@ -3039,6 +3083,7 @@ async function runRemoteBrowserMode(
         browserWSEndpoint,
         {
           approvalWaitMs: config.attachRunning && browserWSEndpoint ? 20_000 : undefined,
+          fallbackToDefault: false,
         },
       );
       client = connection.client;
@@ -3136,58 +3181,67 @@ async function runRemoteBrowserMode(
     }
 
     const modelStrategy = config.modelStrategy ?? DEFAULT_MODEL_STRATEGY;
-    if (config.desiredModel && modelStrategy !== "ignore" && !config.resumeConversationUrl) {
-      modelSelectionEvidence = await withRetries(
-        () =>
-          ensureModelSelection(Runtime, config.desiredModel as string, logger, modelStrategy, {
-            expectedModel: config.expectedModel,
-          }),
-        {
-          retries: 2,
-          delayMs: 300,
-          onRetry: (attempt, error) => {
-            if (options.verbose) {
-              logger(
-                `[retry] Model picker attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
-              );
-            }
-          },
-        },
-      );
-      await ensurePromptReady(Runtime, config.inputTimeoutMs, logger);
-      logger(
-        `Prompt textarea ready (after model switch, ${promptText.length.toLocaleString()} chars queued)`,
-      );
-    } else if (modelStrategy === "ignore" || config.resumeConversationUrl) {
-      modelSelectionEvidence = buildSkippedModelSelectionEvidence(
-        config.desiredModel,
-        modelStrategy,
-      );
-      logger(
-        config.resumeConversationUrl
-          ? "Model picker: skipped (resumed conversation)"
-          : "Model picker: skipped (strategy=ignore)",
-      );
-    }
     const deepResearch = config.researchMode === "deep";
-    if (shouldApplyThinkingTimeSelection(config)) {
-      const thinkingTargetModel = modelStrategy === "select" ? config.desiredModel : null;
-      await withRetries(
-        () => ensureThinkingTime(Runtime, config.thinkingTime, logger, thinkingTargetModel),
-        {
-          retries: 2,
-          delayMs: 300,
-          onRetry: (attempt, error) => {
-            if (options.verbose) {
-              logger(
-                `[retry] Thinking time (${config.thinkingTime}) attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
-              );
-            }
+    const verifyBeforeSubmit = async () => {
+      await activatePageForTrustedInput(Page, logger);
+      // Latest at non-Pro power can expose only "Extra High", hiding its generation.
+      // Set the requested Pro tier first so strict generation selection has a versioned UI signal.
+      if (
+        config.thinkingTime === "pro" &&
+        modelStrategy === "select" &&
+        expectedBrowserModel(config.expectedModel ?? config.desiredModel ?? undefined)
+      ) {
+        await ensureThinkingTime(Runtime, "pro", logger, config.desiredModel);
+      }
+      if (config.desiredModel && modelStrategy !== "ignore") {
+        modelSelectionEvidence = await withRetries(
+          () =>
+            ensureModelSelection(Runtime, config.desiredModel as string, logger, modelStrategy, {
+              expectedModel: config.expectedModel,
+            }),
+          {
+            retries: 2,
+            delayMs: 300,
+            onRetry: (attempt, error) => {
+              if (options.verbose) {
+                logger(
+                  `[retry] Model picker attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
+                );
+              }
+            },
           },
-        },
-      );
-    }
+        );
+        await ensurePromptReady(Runtime, config.inputTimeoutMs, logger);
+        logger(
+          `Prompt textarea ready (after model switch, ${promptText.length.toLocaleString()} chars queued)`,
+        );
+      } else if (modelStrategy === "ignore") {
+        modelSelectionEvidence = buildSkippedModelSelectionEvidence(
+          config.desiredModel,
+          modelStrategy,
+        );
+        logger("Model picker: skipped (strategy=ignore)");
+      }
+      if (shouldApplyThinkingTimeSelection(config)) {
+        const thinkingTargetModel = modelStrategy === "select" ? config.desiredModel : null;
+        await withRetries(
+          () => ensureThinkingTime(Runtime, config.thinkingTime, logger, thinkingTargetModel),
+          {
+            retries: 2,
+            delayMs: 300,
+            onRetry: (attempt, error) => {
+              if (options.verbose) {
+                logger(
+                  `[retry] Thinking time (${config.thinkingTime}) attempt ${attempt + 1}: ${error instanceof Error ? error.message : error}`,
+                );
+              }
+            },
+          },
+        );
+      }
+    };
     const submitOnce = async (prompt: string, submissionAttachments: BrowserAttachment[]) => {
+      await verifyBeforeSubmit();
       const baselineSnapshot = await readAssistantSnapshot(Runtime).catch(() => null);
       const baselineAssistantText =
         typeof baselineSnapshot?.text === "string" ? baselineSnapshot.text.trim() : "";
@@ -3236,6 +3290,17 @@ async function runRemoteBrowserMode(
         );
       }
       let baselineTurns = await readConversationTurnCount(Runtime, logger);
+      const explicitHistory = Boolean(
+        config.resumeConversationUrl ||
+        config.browserTabRef ||
+        isConversationUrl(config.chatgptUrl ?? config.url ?? ""),
+      );
+      if (!promptSubmitted && !explicitHistory && baselineTurns !== 0) {
+        throw new BrowserAutomationError(
+          "New task did not reach an empty conversation. Use --followup with a saved session for intentional history; no prompt was sent.",
+          { stage: "conversation-isolation", details: { turnCount: baselineTurns } },
+        );
+      }
       const providerState: Record<string, unknown> = {
         runtime: Runtime,
         input: Input,
@@ -3354,6 +3419,7 @@ async function runRemoteBrowserMode(
         artifacts: savedArtifacts,
         archive,
         modelSelection: modelSelectionEvidence,
+        responseModels,
         tookMs: durationMs,
         answerTokens: tokens,
         answerChars: researchResult.text.length,
@@ -3583,6 +3649,7 @@ async function runRemoteBrowserMode(
           }
         }
       }
+      let responseMessageId = turnAnswer.meta.messageId;
       let turnAnswerText = turnAnswer.text;
       const turnAnswerHtml = turnAnswer.html ?? "";
 
@@ -3632,6 +3699,7 @@ async function runRemoteBrowserMode(
         finalText.length >= turnAnswerMarkdown.trim().length
       ) {
         logger("Refreshed assistant response via final DOM snapshot");
+        responseMessageId = finalSnapshot?.messageId;
         turnAnswerText = finalText;
         turnAnswerMarkdown = finalText;
       }
@@ -3667,6 +3735,7 @@ async function runRemoteBrowserMode(
           if (!isStillEcho) {
             if (!bestText || text.length > bestText.length) {
               bestText = text;
+              responseMessageId = snapshot?.messageId;
               stableCount = 0;
             } else if (text === bestText) {
               stableCount += 1;
@@ -3683,6 +3752,16 @@ async function runRemoteBrowserMode(
           turnAnswerMarkdown = bestText;
         }
       }
+      const responseModel = await verifyResponseModel(
+        Runtime,
+        config,
+        turnAnswerText,
+        logger,
+        baselineTurns ?? undefined,
+        expectedConversationId(),
+        responseMessageId,
+      );
+      if (responseModel) responseModels.push(responseModel);
       return {
         label,
         answerText: turnAnswerText,
@@ -3834,6 +3913,7 @@ async function runRemoteBrowserMode(
       savedFiles: fileArtifacts.savedFiles,
       archive,
       modelSelection: modelSelectionEvidence,
+      responseModels,
       controllerPid: process.pid,
     };
   } catch (error) {

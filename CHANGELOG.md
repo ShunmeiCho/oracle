@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.0-gpt6.local.2 — 2026-09-06 (local build)
+
+- Verify the returned assistant message's model separately from the picker, binding evidence to its observed conversation ID, message ID and answer. Reject mismatches without resending; label missing evidence unverified and retain per-turn results in sessions/MCP output.
+- Activate the owned browser tab before model selection; wait for slider layout and select the requested Pro tier before validating Latest's version signal. Recheck each submission, including resumed conversations, retries after reload and follow-ups.
+- Refuse unrelated-tab fallback when new remote tab creation fails, and require an empty conversation for an ordinary new task. Show conversation routing in previews; honor an explicit model override for saved-session follow-ups.
+- Inherit configured remote Chrome in CLI as well as MCP, retaining explicit CLI overrides.
+
 ## 0.18.0-gpt6.local.1 — 2026-09-06 (local build)
 
 - Base GPT-6 browser support on upstream PR #448, commit `414a0e34816037e1c73686c6e61b00caa23fd5ed`. This is a locally maintained build, not an official npm release.
