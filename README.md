@@ -1,5 +1,28 @@
 # oracle 🧿 — Bring a second brain, not a second briefing
 
+## Community maintenance fork
+
+This is [ShunmeiCho/oracle](https://github.com/ShunmeiCho/oracle), an unofficial maintenance fork of [steipete/oracle](https://github.com/steipete/oracle). The `maintained` branch contains the working integration; independent fixes are prepared against upstream `main`. The upstream npm and Homebrew packages below do not install this fork.
+
+This build adds configurable browser model selection, optional Codex/Claude Code MCP setup using one installation, per-message model verification, and explicit new-task versus saved-conversation handling. GPT-6 Pro is the currently verified browser target. Future generations require a verified adapter update; the model choice is retained across updates.
+
+Start with the [maintained build guide](docs/gpt6-local.md) for installation, model selection, client setup, evidence, and rollback. To build this revision:
+
+```bash
+git clone --branch maintained https://github.com/ShunmeiCho/oracle.git
+cd oracle
+corepack pnpm install --frozen-lockfile
+corepack pnpm build
+npm pack --ignore-scripts
+npm install -g ./steipete-oracle-0.18.0-gpt6.local.2.tgz --ignore-scripts
+oracle configure
+oracle setup
+```
+
+Validation on Linux: 2019 non-live tests passed, 12 skipped; two no-file browser turns reported `gpt-6-pro` with matching conversation/message identities and retained follow-up context. This does not establish API access, cross-platform deployment, or independent attestation of server-side model weights. The [upstream work in PR #448](https://github.com/steipete/oracle/pull/448) and selected [PR #449](https://github.com/steipete/oracle/pull/449) changes are credited in the build guide. Original attribution and MIT license are retained.
+
+The documentation below describes the upstream project.
+
 <p align="center">
   <img src="./README-header.png" alt="Oracle CLI header banner" width="1100">
 </p>
