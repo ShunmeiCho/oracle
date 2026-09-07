@@ -18,6 +18,32 @@ import {
 import { resolveBrowserConfig } from "../../src/browser/config.js";
 import { BrowserAutomationError } from "../../src/oracle/errors.js";
 
+describe("generated image response failures", () => {
+  test("rejects a current Retry failure instead of accepting its text as an image answer", async () => {
+    const evaluate = vi.fn().mockResolvedValue({
+      result: {
+        value: {
+          text: "Something went wrong while generating the response.",
+          turnIndex: 2,
+          uiError: "temporary_unavailable",
+        },
+      },
+    });
+    await expect(
+      __test__.pollGeneratedImageOrTextAssistantResponse(
+        { evaluate } as unknown as Parameters<
+          typeof __test__.pollGeneratedImageOrTextAssistantResponse
+        >[0],
+        30_000,
+        2,
+      ),
+    ).rejects.toMatchObject({
+      details: { stage: "assistant-ui-error", code: "chatgpt-ui-warning" },
+    });
+    expect(evaluate).toHaveBeenCalledOnce();
+  });
+});
+
 describe("shouldPreserveBrowserOnErrorForTest", () => {
   test("preserves the browser for headful cloudflare challenge errors", () => {
     const error = new BrowserAutomationError("Cloudflare challenge detected.", {
@@ -40,11 +66,16 @@ describe("shouldPreserveBrowserOnErrorForTest", () => {
     const recheck = new BrowserAutomationError("assistant recheck failed", {
       stage: "assistant-recheck",
     });
+    const uiError = new BrowserAutomationError("assistant failed", {
+      stage: "assistant-ui-error",
+    });
 
     expect(shouldPreserveBrowserOnErrorForTest(timeout, false)).toBe(true);
     expect(shouldPreserveBrowserOnErrorForTest(recheck, false)).toBe(true);
+    expect(shouldPreserveBrowserOnErrorForTest(uiError, false)).toBe(true);
     expect(classifyPreservedBrowserErrorForTest(timeout, false)).toBe("reattachable-capture");
     expect(classifyPreservedBrowserErrorForTest(recheck, false)).toBe("reattachable-capture");
+    expect(classifyPreservedBrowserErrorForTest(uiError, false)).toBe("reattachable-capture");
   });
 
   test("does not preserve assistant capture errors in headless mode", () => {
@@ -897,6 +928,47 @@ describe("runSubmissionWithRecoveryForTest", () => {
     expect(submit).toHaveBeenNthCalledWith(2, "inline prompt", []);
     expect(submit).toHaveBeenNthCalledWith(3, "fallback prompt", [
       expect.objectContaining({ displayPath: "fallback.txt" }),
+    ]);
+  });
+
+  test("materializes fallback attachments before retrying a prompt-too-large submit", async () => {
+    const fallbackSubmission = {
+      prompt: "unbundled fallback",
+      attachments: [{ path: "/tmp/one.txt", displayPath: "one.txt", sizeBytes: 3 }],
+      prepare: vi.fn(async () => {
+        fallbackSubmission.prompt = "bundled fallback";
+        fallbackSubmission.attachments = [
+          {
+            path: "/tmp/attachments-bundle.zip",
+            displayPath: "attachments-bundle.zip",
+            sizeBytes: 12,
+          },
+        ];
+      }),
+    };
+    const submit = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new BrowserAutomationError("prompt too large", { code: "prompt-too-large" }),
+      )
+      .mockResolvedValueOnce({
+        baselineTurns: 1,
+        baselineAssistantText: "ok",
+      });
+
+    await runSubmissionWithRecoveryForTest({
+      prompt: "inline prompt",
+      attachments: [],
+      fallbackSubmission,
+      submit,
+      reloadPromptComposer: vi.fn().mockResolvedValue(undefined),
+      prepareFallbackSubmission: vi.fn().mockResolvedValue(undefined),
+      logger: vi.fn<(message: string) => void>(),
+    });
+
+    expect(fallbackSubmission.prepare).toHaveBeenCalledTimes(1);
+    expect(submit).toHaveBeenNthCalledWith(2, "bundled fallback", [
+      expect.objectContaining({ displayPath: "attachments-bundle.zip" }),
     ]);
   });
 

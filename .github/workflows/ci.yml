@@ -65,3 +65,5 @@ jobs:
         run: node scripts/cdp-disconnect-proof.mjs
       - name: Run attachment send proof
         run: node scripts/attachment-send-proof.mjs
+      - name: Run effort slider readiness proof
+        run: node scripts/effort-readiness-proof.mjs

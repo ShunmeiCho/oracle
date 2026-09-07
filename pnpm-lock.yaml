@@ -69,7 +69,7 @@ importers:
         version: 0.3.3
       openai:
         specifier: ^7.10.0
-        version: 7.10.0(ws@8.21.3)(zod@4.5.4)
+        version: 7.10.0(undici@7.29.1)(ws@8.21.3)(zod@4.5.4)
       osc-progress:
         specifier: ^0.3.3
         version: 0.3.3
@@ -2271,6 +2271,10 @@ packages:
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
+  undici@7.29.1:
+    resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
+    engines: {node: '>=20.18.1'}
+
   unicorn-magic@0.3.0:
     resolution: {integrity: sha512-+QBBXBCvifc56fsbuxZQ6Sic3wqqc3WWaqxs58gvJrcOuN83HGTCwz3oS5phzU9LthRNE9VrJCFCLUgHeeFnfA==}
     engines: {node: '>=18'}
@@ -3903,8 +3907,9 @@ snapshots:
       regex: 6.1.0
       regex-recursion: 6.0.2
 
-  openai@7.10.0(ws@8.21.3)(zod@4.5.4):
+  openai@7.10.0(undici@7.29.1)(ws@8.21.3)(zod@4.5.4):
     optionalDependencies:
+      undici: 7.29.1
       ws: 8.21.3
       zod: 4.5.4
 
@@ -4314,6 +4319,9 @@ snapshots:
   undici-types@5.26.5: {}
 
   undici-types@8.3.0: {}
+
+  undici@7.29.1:
+    optional: true
 
   unicorn-magic@0.3.0: {}
 

@@ -3129,6 +3129,26 @@ describe("unified Intelligence picker with Advanced -> Effort submenu", () => {
     expect(dom.keys).toEqual(["ArrowRight"]);
   });
 
+  it("waits for the keyboard owner to be mounted before changing power", async () => {
+    const dom = buildDirectSlider(3);
+    const query = dom.simple.querySelector.bind(dom.simple);
+    let reads = 0;
+    dom.simple.querySelector = (selector: string) =>
+      selector === "[data-model-reasoning-effort-slider]" && ++reads < 3 ? null : query(selector);
+    await expect(run(dom.documentStub, "pro")).resolves.toEqual({
+      status: "switched",
+      label: "Pro",
+    });
+    expect(dom.keys).toEqual(["ArrowRight"]);
+  });
+
+  it("fails without input when the keyboard owner never mounts", async () => {
+    const dom = buildDirectSlider(3);
+    dom.simple.children.length = 0;
+    expect((await run(dom.documentStub, "pro")).status).toBe("selection-unverified");
+    expect(dom.keys).toEqual([]);
+  });
+
   it("fails without keyboard input when the direct slider remains hidden", async () => {
     const dom = buildDirectSlider(3);
     dom.control.getBoundingClientRect = () => ({ width: 200, height: 0 });

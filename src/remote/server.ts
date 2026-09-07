@@ -9,6 +9,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { mkdtemp, rm, mkdir, writeFile, stat, realpath } from "node:fs/promises";
 import chalk from "chalk";
 import type { BrowserAttachment, BrowserLogger, CookieParam } from "../browser/types.js";
+import { materializeStagedFallbackBundle } from "../browser/prompt.js";
 import type { BrowserSessionConfig } from "../sessionManager.js";
 import { runBrowserMode } from "../browserMode.js";
 import type { BrowserRunResult } from "../browserMode.js";
@@ -70,6 +71,7 @@ const ARTIFACT_PROTOCOL_VERSION = 1;
 const REMOTE_ARTIFACT_TTL_MS = 30 * 60 * 1000;
 
 const ARTIFACT_CAPABILITIES: RemoteArtifactCapabilities = {
+  deferredFallbackBundling: true,
   artifactTransfer: true,
   artifactProtocolVersion: ARTIFACT_PROTOCOL_VERSION,
   maxArtifactBytes: MAX_REMOTE_ARTIFACT_BYTES,
@@ -223,6 +225,7 @@ export async function createRemoteServer(
       | {
           prompt: string;
           attachments: BrowserAttachment[];
+          prepare?: () => Promise<void>;
         }
       | undefined;
     try {
@@ -247,6 +250,29 @@ export async function createRemoteServer(
           prompt: payload.fallbackSubmission.prompt,
           attachments: fallbackAttachments,
         };
+        const pendingBundle = payload.fallbackSubmission.bundle;
+        if (pendingBundle) {
+          if (
+            !["text", "zip"].includes(pendingBundle.format) ||
+            !["all", "text-only"].includes(pendingBundle.scope)
+          ) {
+            throw new Error("Invalid fallback bundle format or scope.");
+          }
+          let preparation: Promise<void> | undefined;
+          const prepare = async () => {
+            if (!fallbackSubmission) return;
+            const prepared = await materializeStagedFallbackBundle({
+              composerText: fallbackSubmission.prompt,
+              attachments: fallbackSubmission.attachments,
+              format: pendingBundle.format,
+              scope: pendingBundle.scope,
+              bundleParentDir: runDir,
+            });
+            fallbackSubmission.prompt = prepared.composerText;
+            fallbackSubmission.attachments = prepared.attachments;
+          };
+          fallbackSubmission.prepare = () => (preparation ??= prepare());
+        }
       }
 
       // Reuse the existing browser logger surface so clients see the same log stream.

@@ -1100,7 +1100,7 @@ function buildThinkingTimeExpression(
       };
       let current = resolve();
       const finish = (result) => { closeOpenMenus(); return result; };
-      // The picker animation can expose the simple view before its keyboard owner has height.
+      // The picker can expose its simple view before the keyboard owner is mounted or visible.
       const readyDeadline = performance.now() + MAX_WAIT_MS;
       while (!current && performance.now() < readyDeadline) {
         await sleep(100);
